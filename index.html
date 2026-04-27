@@ -1,0 +1,2960 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lost Exhibit Hunter - Night City</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #02030a;
+            color: #edf3ff;
+            font-family: system-ui,-apple-system,"Segoe UI",sans-serif
+        }
+
+        canvas {
+            display: block
+        }
+
+        #hud {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none
+        }
+
+        #panel {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: min(380px,calc(100vw - 32px));
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 18px;
+            background: rgba(6,10,20,.78);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 20px 60px rgba(0,0,0,.4)
+        }
+
+        #title {
+            font-size: 19px;
+            font-weight: 1000;
+            letter-spacing: .8px
+        }
+
+        .muted {
+            color: rgba(237,243,255,.62);
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255,255,255,.08);
+            padding-top: 7px;
+            margin-top: 7px;
+            font-size: 13px
+        }
+
+            .row b {
+                color: #ffd166
+            }
+
+        #chips{display:none}
+
+        
+        #timerBadge {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 22;
+            min-width: 128px;
+            padding: 8px 16px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,.16);
+            background: rgba(6,10,20,.78);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 18px 50px rgba(0,0,0,.38);
+            text-align: center;
+            pointer-events: none
+        }
+
+        #timerBadge span {
+            display: block;
+            font-size: 10px;
+            letter-spacing: 1.8px;
+            color: rgba(237,243,255,.55);
+            font-weight: 900;
+            line-height: 1
+        }
+
+        #timerBadge b {
+            display: block;
+            margin-top: 3px;
+            color: #ffd166;
+            font-size: 24px;
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums
+        }
+
+        #staminaBar {
+            position: fixed;
+            left: 50%;
+            bottom: 46px;
+            transform: translateX(-50%);
+            width: min(620px,48vw);
+            height: 12px;
+            border-radius: 999px;
+            background: rgba(12,18,28,.82);
+            overflow: hidden;
+            border: 1px solid rgba(167,192,210,.22);
+            box-shadow: 0 12px 36px rgba(0,0,0,.45);
+            z-index: 20
+        }
+
+        #staminaFill {
+            height: 100%;
+            width: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg,#5f7384,#8fa7b5);
+            transition: width .12s linear
+        }
+
+        .chip {
+            font-size: 11px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,.13);
+            color: rgba(255,255,255,.55);
+            background: rgba(255,255,255,.04)
+        }
+
+            .chip.done {
+                background: #9dffc5;
+                color: #06110b;
+                font-weight: 900
+            }
+
+        #cross {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 28px;
+            height: 28px;
+            transform: translate(-50%,-50%);
+            opacity: .9
+        }
+
+            #cross:before, #cross:after {
+                content: "";
+                position: absolute;
+                background: #fff;
+                box-shadow: 0 0 8px #7bdcff
+            }
+
+            #cross:before {
+                left: 13px;
+                top: 3px;
+                width: 2px;
+                height: 22px
+            }
+
+            #cross:after {
+                left: 3px;
+                top: 13px;
+                width: 22px;
+                height: 2px
+            }
+
+        #prompt {
+            position: absolute;
+            left: 50%;
+            top: calc(50% + 58px);
+            transform: translateX(-50%);
+            display: none;
+            min-width: 340px;
+            max-width: calc(100vw - 40px);
+            text-align: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,209,102,.35);
+            background: rgba(6,8,16,.82);
+            color: #fff2bf;
+            font-weight: 900
+        }
+
+        #msg {
+            position: absolute;
+            left: 50%;
+            bottom: 75px;
+            transform: translateX(-50%);
+            display: none;
+            max-width: min(760px,calc(100vw - 36px));
+            padding: 12px 18px;
+            text-align: center;
+            border-radius: 18px;
+            border: 1px solid rgba(123,220,255,.18);
+            background: rgba(5,8,16,.88);
+            color: #d9f4ff;
+            font-weight: 800
+        }
+
+        #help {
+            position: absolute;
+            left: 18px;
+            bottom: 16px;
+            color: rgba(255,255,255,.58);
+            font-size: 12px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,.11);
+            border-radius: 999px;
+            background: rgba(5,8,16,.58);
+            backdrop-filter: blur(10px)
+        }
+
+        #mapPanel {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            width: 270px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 18px;
+            background: rgba(6,10,20,.78);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 20px 60px rgba(0,0,0,.4)
+        }
+
+        #mapTitle {
+            font-size: 12px;
+            font-weight: 1000;
+            letter-spacing: 2px;
+            color: #9be4ff;
+            margin: 0 0 8px
+        }
+
+        #mapCanvas {
+            width: 246px;
+            height: 246px;
+            border-radius: 12px;
+            background: rgba(2,6,14,.9);
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        #mapLegend {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 7px;
+            color: rgba(237,243,255,.58);
+            font-size: 10px
+        }
+
+        #otologic {
+            position: absolute;
+            right: 18px;
+            bottom: 14px;
+            color: rgba(255,255,255,.42);
+            font-size: 11px;
+            letter-spacing: .5px;
+            background: rgba(5,8,16,.45);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 999px;
+            padding: 6px 9px
+        }
+
+        #inventoryModal {
+            position: fixed;
+            inset: 0;
+            z-index: 45;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,.42);
+            backdrop-filter: blur(8px);
+            pointer-events: auto
+        }
+
+        #inventoryCard {
+            width: min(760px,calc(100vw - 36px));
+            max-height: min(680px,calc(100vh - 60px));
+            overflow: auto;
+            padding: 22px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: linear-gradient(180deg,rgba(12,16,30,.96),rgba(7,10,19,.94));
+            box-shadow: 0 34px 110px rgba(0,0,0,.62)
+        }
+
+        #inventoryHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 16px
+        }
+
+        #inventoryTitle {
+            font-size: 26px;
+            font-weight: 1000;
+            letter-spacing: .5px;
+            color: #ffd166
+        }
+
+        #inventorySub {
+            font-size: 13px;
+            color: rgba(237,243,255,.62);
+            margin-top: 3px
+        }
+
+        #inventoryLayout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 14px;
+            align-items: start
+        }
+
+        #inventoryPreviewBox {
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 18px;
+            background: rgba(255,255,255,.04);
+            padding: 12px;
+            text-align: center
+        }
+
+        #inventoryPreviewTitle {
+            font-size: 12px;
+            font-weight: 1000;
+            letter-spacing: 1.4px;
+            color: #9be4ff;
+            margin-bottom: 8px
+        }
+
+        #inventoryCanvas {
+            width: 100%;
+            height: 220px;
+            border-radius: 14px;
+            background: radial-gradient(circle at 50% 45%,rgba(123,220,255,.12),rgba(0,0,0,.10));
+            border: 1px solid rgba(255,255,255,.08)
+        }
+
+        #inventoryPreviewName {
+            font-size: 13px;
+            color: #ffd166;
+            font-weight: 900;
+            margin-top: 8px
+        }
+
+        #inventoryItems {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
+            gap: 10px
+        }
+
+        .invItem {
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,.10);
+            background: rgba(255,255,255,.045);
+            cursor: pointer;
+            transition: transform .12s,border-color .12s
+        }
+
+            .invItem:hover {
+                transform: translateY(-1px);
+                border-color: rgba(255,209,102,.42)
+            }
+
+            .invItem.active {
+                border-color: rgba(255,209,102,.75);
+                background: rgba(255,209,102,.08)
+            }
+
+            .invItem b {
+                display: block;
+                color: #edf3ff;
+                font-size: 14px;
+                margin-bottom: 5px
+            }
+
+            .invItem span {
+                color: rgba(237,243,255,.58);
+                font-size: 12px
+            }
+
+        #menu, #clear {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at 55% 35%,rgba(123,220,255,.1),transparent 35%),rgba(3,5,12,.92)
+        }
+
+        #clear {
+            display: none
+        }
+
+        .card {
+            width: min(860px,100%);
+            max-height: calc(100vh - 48px);
+            overflow: auto;
+            padding: 30px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: linear-gradient(180deg,rgba(12,16,30,.92),rgba(7,10,19,.9));
+            box-shadow: 0 34px 110px rgba(0,0,0,.55);
+            backdrop-filter: blur(18px)
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(34px,6vw,64px);
+            line-height: .95;
+            letter-spacing: -1px
+        }
+
+            h1 span {
+                color: #ffd166;
+                text-shadow: 0 0 22px rgba(255,209,102,.25)
+            }
+
+        .lead {
+            color: rgba(237,243,255,.68);
+            line-height: 1.8;
+            margin: 18px 0 22px;
+            font-size: 15px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 12px;
+            margin: 18px 0
+        }
+
+        .info {
+            padding: 13px 14px;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 18px;
+            background: rgba(255,255,255,.04)
+        }
+
+            .info p {
+                margin: 5px 0 0;
+                color: rgba(237,243,255,.62);
+                font-size: 13px;
+                line-height: 1.6
+            }
+
+        button, a.btn, label.btn {
+            pointer-events: auto;
+            border: 0;
+            border-radius: 999px;
+            padding: 12px 18px;
+            color: #061015;
+            font-weight: 1000;
+            cursor: pointer;
+            background: linear-gradient(135deg,#ffd166,#ffe6a3);
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block
+        }
+
+            button.secondary, a.secondary, label.btn {
+                color: #edf3ff;
+                background: rgba(255,255,255,.08);
+                border: 1px solid rgba(255,255,255,.15)
+            }
+
+        input[type=file] {
+            display: none
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px
+        }
+
+        #settingsBox {
+            margin-top: 14px;
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 18px;
+            background: rgba(255,255,255,.04)
+        }
+
+        .settingRow {
+            display: grid;
+            grid-template-columns: 92px 1fr 54px;
+            gap: 10px;
+            align-items: center;
+            font-size: 13px;
+            color: rgba(237,243,255,.72)
+        }
+
+            .settingRow b {
+                color: #ffd166;
+                text-align: right
+            }
+
+            .settingRow input {
+                width: 100%;
+                accent-color: #ffd166
+            }
+
+        .downloads {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 8px;
+            margin-top: 10px
+        }
+
+            .downloads a {
+                font-size: 12px;
+                padding: 9px 10px;
+                text-align: center
+            }
+
+
+        
+        #expeditionResult {
+            position: fixed;
+            inset: 0;
+            z-index: 85;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0,0,0,.64);
+            backdrop-filter: blur(10px);
+            pointer-events: auto
+        }
+
+        #expeditionCard {
+            width: min(760px,calc(100vw - 42px));
+            max-height: min(720px,calc(100vh - 48px));
+            overflow: auto;
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: linear-gradient(180deg,rgba(12,16,30,.98),rgba(7,10,19,.96));
+            box-shadow: 0 34px 110px rgba(0,0,0,.66)
+        }
+
+        #expeditionTitle {
+            font-size: 30px;
+            font-weight: 1000;
+            color: #ffd166;
+            letter-spacing: .5px
+        }
+
+        #expeditionSub {
+            color: rgba(237,243,255,.62);
+            font-size: 13px;
+            margin: 3px 0 16px
+        }
+
+        #expeditionStats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+            gap: 10px;
+            margin-bottom: 14px
+        }
+
+        .resultStat {
+            border: 1px solid rgba(255,255,255,.10);
+            background: rgba(255,255,255,.045);
+            border-radius: 16px;
+            padding: 12px
+        }
+
+        .resultStat span {
+            display: block;
+            font-size: 11px;
+            color: rgba(237,243,255,.52);
+            margin-bottom: 5px
+        }
+
+        .resultStat b {
+            font-size: 20px;
+            color: #edf3ff
+        }
+
+        #expeditionItems {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+            gap: 8px;
+            margin-top: 10px
+        }
+
+        .resultItem {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.10);
+            background: rgba(255,255,255,.045);
+            color: rgba(237,243,255,.80);
+            font-size: 12px
+        }
+
+        .resultItem.new {
+            border-color: rgba(255,209,102,.58);
+            background: rgba(255,209,102,.08)
+        }
+
+        .resultItem b {
+            color: #ffd166
+        }
+
+        #expeditionClose {
+            margin-top: 18px;
+            width: 100%;
+            justify-content: center
+        }
+
+        .catalogItem.locked {
+            opacity: .62;
+            color: rgba(237,243,255,.45)
+        }
+
+        .catalogItem.locked b {
+            color: rgba(237,243,255,.38)
+        }
+
+        .catalogItem.locked small {
+            color: rgba(237,243,255,.28)
+        }
+
+        .catalogItem.discovered {
+            border-color: rgba(124,255,178,.20)
+        }
+
+        #catalogBox {
+            margin-top: 16px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 18px;
+            background: rgba(255,255,255,.035)
+        }
+
+        #catalogTitle {
+            font-size: 15px;
+            font-weight: 1000;
+            letter-spacing: .8px;
+            color: #edf3ff;
+            margin-bottom: 6px
+        }
+
+            #catalogTitle span {
+                color: #9be4ff;
+                font-size: 11px;
+                margin-left: 8px;
+                letter-spacing: 1.5px
+            }
+
+        #catalogOpen {
+            margin-top: 12px
+        }
+
+        #catalogModal {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0,0,0,.58);
+            backdrop-filter: blur(10px);
+            pointer-events: auto
+        }
+
+        #catalogModalCard {
+            width: min(980px,calc(100vw - 40px));
+            max-height: min(760px,calc(100vh - 48px));
+            overflow: auto;
+            padding: 22px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: linear-gradient(180deg,rgba(12,16,30,.97),rgba(7,10,19,.95));
+            box-shadow: 0 34px 110px rgba(0,0,0,.62)
+        }
+
+        #catalogModalHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px
+        }
+
+        #catalogModalTitle {
+            font-size: 28px;
+            font-weight: 1000;
+            color: #ffd166;
+            letter-spacing: .5px
+        }
+
+        #catalogModalSub {
+            margin-top: 3px;
+            font-size: 13px;
+            color: rgba(237,243,255,.62)
+        }
+
+        #catalogSearch {
+            width: 100%;
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: rgba(255,255,255,.06);
+            color: #edf3ff;
+            outline: none;
+            font-size: 14px
+        }
+
+        #catalogSearch::placeholder {
+            color: rgba(237,243,255,.45)
+        }
+
+        #catalogLayout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 16px;
+            align-items: start
+        }
+
+        #catalogPreviewBox {
+            position: sticky;
+            top: 0;
+            padding: 12px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,.10);
+            background: rgba(255,255,255,.045);
+            text-align: center
+        }
+
+        #catalogPreviewTitle {
+            font-size: 12px;
+            font-weight: 1000;
+            letter-spacing: 1.4px;
+            color: #9be4ff;
+            margin-bottom: 8px
+        }
+
+        #catalogCanvas {
+            width: 100%;
+            height: 250px;
+            border-radius: 14px;
+            background: radial-gradient(circle at 50% 45%,rgba(123,220,255,.13),rgba(0,0,0,.14));
+            border: 1px solid rgba(255,255,255,.08)
+        }
+
+        #catalogPreviewName {
+            margin-top: 9px;
+            font-size: 14px;
+            color: #ffd166;
+            font-weight: 1000
+        }
+
+        #catalogPreviewHint {
+            margin-top: 4px;
+            color: rgba(237,243,255,.48);
+            font-size: 11px;
+            line-height: 1.5
+        }
+
+        #catalogModalGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(210px,1fr));
+            gap: 9px
+        }
+
+        .catalogItem {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.10);
+            background: rgba(255,255,255,.045);
+            font-size: 13px;
+            color: rgba(237,243,255,.82);
+            line-height: 1.45;
+            cursor: pointer;
+            transition: transform .12s,border-color .12s,background .12s
+        }
+
+        .catalogItem:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255,209,102,.42)
+        }
+
+        .catalogItem.active {
+            border-color: rgba(255,209,102,.75);
+            background: rgba(255,209,102,.08)
+        }
+
+            .catalogItem b {
+                display: inline-block;
+                color: #ffd166;
+                margin-right: 8px;
+                font-variant-numeric: tabular-nums
+            }
+
+            .catalogItem small {
+                display: block;
+                margin-top: 3px;
+                color: rgba(237,243,255,.42);
+                font-size: 10px;
+                letter-spacing: .5px
+            }
+
+#credits {
+            margin-top: 16px;
+            color: rgba(255,255,255,.45);
+            font-size: 11px;
+            line-height: 1.6
+        }
+
+
+
+        .catalogItemMain {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px
+        }
+
+        .catalogCount {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,209,102,.45);
+            background: rgba(255,209,102,.12);
+            color: #ffd166;
+            font-style: normal;
+            font-size: 12px;
+            font-weight: 1000;
+            font-variant-numeric: tabular-nums
+        }
+
+        #menu {
+            background:
+                radial-gradient(circle at 18% 18%,rgba(255,209,102,.16),transparent 28%),
+                radial-gradient(circle at 80% 24%,rgba(123,220,255,.16),transparent 32%),
+                linear-gradient(135deg,rgba(2,3,10,.96),rgba(7,13,26,.92) 52%,rgba(1,3,9,.96))
+        }
+
+        #menu .card {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(0,1.08fr) minmax(320px,.92fr);
+            gap: 24px;
+            padding: 34px;
+            border: 1px solid rgba(255,255,255,.16);
+            background:
+                linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.035)),
+                linear-gradient(180deg,rgba(12,16,30,.94),rgba(7,10,19,.91));
+        }
+
+        #menu .card:before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg,rgba(255,209,102,.25),transparent 32%,rgba(123,220,255,.20) 72%,transparent),
+                repeating-linear-gradient(90deg,rgba(255,255,255,.055) 0 1px,transparent 1px 80px);
+            opacity: .35;
+            mask-image: linear-gradient(180deg,#000,transparent 72%)
+        }
+
+        .menuHero, .menuSide {
+            position: relative;
+            z-index: 1
+        }
+
+        .menuHero {
+            min-height: 520px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px 0
+        }
+
+        .menuEyebrow {
+            display: inline-flex;
+            width: fit-content;
+            padding: 7px 11px;
+            border: 1px solid rgba(123,220,255,.22);
+            border-radius: 999px;
+            background: rgba(123,220,255,.07);
+            color: #9be4ff;
+            font-size: 11px;
+            font-weight: 1000;
+            letter-spacing: 2.2px
+        }
+
+        #menu .menuTitle {
+            margin-top: 18px;
+            font-size: clamp(48px,8.4vw,96px);
+            line-height: .82;
+            letter-spacing: -3px;
+            text-transform: uppercase
+        }
+
+        #menu .menuTitle span {
+            display: inline-block;
+            color: transparent;
+            background: linear-gradient(135deg,#ffd166,#fff2bf 50%,#7bdcff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: none
+        }
+
+        #menu .menuLead {
+            max-width: 600px;
+            margin: 20px 0 0;
+            color: rgba(237,243,255,.74);
+            font-size: 15px
+        }
+
+        .menuStats {
+            display: grid;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 10px;
+            margin: 22px 0
+        }
+
+        .statPill {
+            padding: 13px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,.11);
+            background: rgba(255,255,255,.045)
+        }
+
+        .statPill span {
+            display: block;
+            margin-bottom: 6px;
+            color: rgba(237,243,255,.48);
+            font-size: 10px;
+            letter-spacing: 1.6px;
+            font-weight: 1000
+        }
+
+        .statPill b {
+            display: block;
+            color: #edf3ff;
+            font-size: 18px
+        }
+
+        .menuActions {
+            margin-top: 4px
+        }
+
+        #menu #start {
+            min-width: 210px;
+            padding: 14px 24px;
+            box-shadow: 0 14px 34px rgba(255,209,102,.18)
+        }
+
+        .menuSide {
+            display: grid;
+            gap: 12px
+        }
+
+        .missionPanel {
+            padding: 16px;
+            border-radius: 22px;
+            border: 1px solid rgba(255,255,255,.11);
+            background: rgba(255,255,255,.045)
+        }
+
+        .missionPanelTitle {
+            color: #ffd166;
+            font-size: 13px;
+            font-weight: 1000;
+            letter-spacing: 1.8px;
+            margin-bottom: 9px
+        }
+
+        #menu .grid {
+            grid-template-columns: 1fr;
+            gap: 9px;
+            margin: 0
+        }
+
+        #menu .info {
+            border-radius: 16px;
+            background: rgba(2,6,14,.35)
+        }
+
+        #menu #settingsBox,
+        #menu #catalogBox {
+            margin-top: 0
+        }
+
+        #menu #catalogOpen {
+            width: 100%;
+            margin-top: 10px;
+            text-align: center
+        }
+
+        @media(max-width:880px) {
+            #menu .card {
+                grid-template-columns: 1fr;
+                padding: 26px
+            }
+
+            .menuHero {
+                min-height: auto
+            }
+
+            .menuStats {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:650px) {
+            .grid, .downloads {
+                grid-template-columns: 1fr
+            }
+
+            #help {
+                display: none
+            }
+
+            #mapPanel {
+                display: none
+            }
+
+            #inventoryLayout {
+                grid-template-columns: 1fr
+            }
+
+            #catalogLayout {
+                grid-template-columns: 1fr
+            }
+
+            #catalogPreviewBox {
+                position: relative
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <div id="panel">
+            <div id="title">Lost Exhibit Hunter</div>
+            <div class="muted">夜の街並みに隠された宝物を、宝箱や路地を調べながら回収しよう。</div>
+            <div class="row"><span>回収数</span><b id="count">0 / 5</b></div>
+            <div class="row"><span>状態</span><b id="status">探索中</b></div>
+            <div class="row"><span>帰還地点</span><b id="exitState" style="color:#7cffb2">OPEN</b></div>
+            <div id="chips"></div>
+        </div>
+        <div id="timerBadge"><span>TIME</span><b id="timerText">03:00</b></div>
+        <div id="staminaBar"><div id="staminaFill"></div></div>
+        <div id="staminaText" style="display:none">100%</div>
+        <div id="mapPanel">
+            <div id="mapTitle">CITY MAP</div>
+            <canvas id="mapCanvas" width="240" height="240"></canvas>
+            <div id="mapLegend"><span>▲ 現在地</span><span>H長押し：宝箱表示</span><span>青 2F建物</span></div>
+        </div>
+        <div id="cross"></div>
+        <div id="prompt"></div>
+        <div id="msg"></div>
+        <div id="help">WASD 移動 / Space ジャンプ / 左Shift ダッシュ / Tab インベントリ / マウス 視点 / F 調べる・回収</div>
+        <div id="otologic">OtoLogic</div>
+    </div>
+
+    <div id="inventoryModal">
+        <div id="inventoryCard">
+            <div id="inventoryHeader">
+                <div>
+                    <div id="inventoryTitle">Inventory</div>
+                    <div id="inventorySub">今まで手に入れた宝物</div>
+                </div>
+                <button id="inventoryClose" class="secondary">閉じる</button>
+            </div>
+            <div id="inventoryLayout">
+                <div id="inventoryPreviewBox">
+                    <div id="inventoryPreviewTitle">3D Preview</div>
+                    <canvas id="inventoryCanvas" width="300" height="220"></canvas>
+                    <div id="inventoryPreviewName">アイテムを選択</div>
+                </div>
+                <div id="inventoryItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="expeditionResult">
+        <div id="expeditionCard">
+            <div id="expeditionTitle">遠征終了</div>
+            <div id="expeditionSub">今回の探索結果</div>
+            <div id="expeditionStats"></div>
+            <div id="expeditionItems"></div>
+            <button id="expeditionClose" type="button">メニューへ戻る</button>
+        </div>
+    </div>
+
+    <div id="catalogModal">
+        <div id="catalogModalCard">
+            <div id="catalogModalHeader">
+                <div>
+                    <div id="catalogModalTitle">宝物図鑑</div>
+                    <div id="catalogModalSub">発見済み宝物の種類と回収個数を確認できます</div>
+                </div>
+                <button id="catalogClose" class="secondary" type="button">閉じる</button>
+            </div>
+            <input id="catalogSearch" type="text" placeholder="宝物名で検索..." />
+            <div id="catalogLayout">
+                <div id="catalogPreviewBox">
+                    <div id="catalogPreviewTitle">3D Preview</div>
+                    <canvas id="catalogCanvas" width="320" height="250"></canvas>
+                    <div id="catalogPreviewName">宝物を選択</div>
+                    <div id="catalogPreviewHint">一覧から宝物をクリックすると3Dモデルを確認できます。</div>
+                </div>
+                <div id="catalogModalGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="menu">
+        <div class="card">
+            <section class="menuHero">
+                <div>
+                    <div class="menuEyebrow">NIGHT CITY / COLLECTION RUN</div>
+                    <h1 class="menuTitle">Lost Exhibit<br><span>Hunter</span></h1>
+                    <p class="lead menuLead">夜の街に散らばった失われた展示品を探し出す、3分間の探索ゲーム。宝箱を調べ、当たりを引き、RETURNゲートまで生還せよ。</p>
+                    <div class="menuStats">
+                        <div class="statPill"><span>TIME LIMIT</span><b>03:00</b></div>
+                        <div class="statPill"><span>TREASURES</span><b>34 TYPES</b></div>
+                        <div class="statPill"><span>CHEST RATE</span><b>10% / 30%</b></div>
+                    </div>
+                </div>
+                <div class="buttons menuActions">
+                    <button id="start">START EXPLORING</button>
+                    <button id="mute" class="secondary">音 ON</button>
+                </div>
+            </section>
+
+            <section class="menuSide">
+                <div class="missionPanel">
+                    <div class="missionPanelTitle">MISSION BRIEFING</div>
+                    <div class="grid">
+                        <div class="info"><b>目的</b><p>宝箱や展示物を調べて宝物を回収。脱出成功で図鑑に保存され、同じ宝物は個数として記録されます。</p></div>
+                        <div class="info"><b>確率</b><p>通常宝箱は宝物1割、2F HOUSE内の宝箱は宝物3割。H長押しでマップに宝箱を表示。</p></div>
+                        <div class="info"><b>操作</b><p>WASDで移動、マウスで視点、Fで調べる・回収、Shiftでダッシュ、Tabでインベントリ。</p></div>
+                    </div>
+                </div>
+
+                <div id="settingsBox">
+                    <div class="settingRow">
+                        <span>BGM音量</span>
+                        <input id="volumeSlider" type="range" min="0" max="100" value="50">
+                        <b id="volumeValue">50%</b>
+                    </div>
+                    <div class="settingRow">
+                        <span>マウス感度</span>
+                        <input id="sensitivitySlider" type="range" min="0" max="100" value="50">
+                        <b id="sensitivityValue">50%</b>
+                    </div>
+                </div>
+
+                <div id="catalogBox">
+                    <div id="catalogTitle">宝物図鑑 <span>34 TYPES</span></div>
+                    <div class="muted">発見済みの宝物は、種類だけでなく回収個数も確認できます。</div>
+                    <button id="catalogOpen" class="secondary" type="button">宝物図鑑を開く</button>
+                </div>
+
+                <div id="credits">Model credits: Khronos glTF Sample Assets / individual authors. BGM: zanzou_no_hiyu.mp3. ネット接続が必要です。ローカルで外部モデルが読めない場合は GitHub Pages か Live Server で確認してください。</div>
+            </section>
+        </div>
+    </div>
+
+    <div id="clear">
+        <div class="card">
+            <h1>EXHIBITS<br><span>RECOVERED</span></h1>
+            <p class="lead">帰還地点まで戻りました。集めた宝物を持って夜の街探索、完了。</p>
+            <button onclick="location.reload()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+    </script>
+    <script type="module">
+        import * as THREE from "three";
+        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+        const BASE = "./assets/";
+        const MODELS = {
+            tree: "./assets/environment/tree.glb",
+            tokyo: "./assets/environment/littlest_tokyo.glb"
+        };
+        const FOUND = [
+            { id: "antiqueCamera", name: "古い三脚カメラ", url: "./assets/treasures/01_antique_camera.glb", fit: 1.35 },
+            { id: "lantern", name: "古い木製ランタン", url: "./assets/treasures/02_lantern.glb", fit: 1.35 },
+            { id: "waterBottle", name: "青い金属水筒", url: "./assets/treasures/03_water_bottle.glb", fit: 1.25 },
+            { id: "boombox", name: "発光する古代ラジカセ", url: "./assets/treasures/04_boombox.glb", fit: 1.35 },
+            { id: "avocado", name: "黄金の果実標本", url: "./assets/treasures/05_avocado.glb", fit: .95 },
+            { id: "duck", name: "小さな黄金アヒル", url: "./assets/treasures/06_duck.glb", fit: 1.0 },
+            { id: "damagedHelmet", name: "古代風ヘルメット", url: "./assets/treasures/07_damaged_helmet.glb", fit: 1.15 },
+            { id: "fox", name: "銀色の狐像", url: "./assets/treasures/08_fox.glb", fit: 1.25 },
+            { id: "fish", name: "青銅の魚像", url: "./assets/treasures/09_fish.glb", fit: 1.15 },
+            { id: "gearbox", name: "謎の歯車装置", url: "./assets/treasures/10_gearbox.glb", fit: 1.25 },
+            { id: "brainstem", name: "水晶の神経標本", url: "./assets/treasures/11_brainstem.glb", fit: 1.15 },
+            { id: "cesiumMan", name: "小さな守護者像", url: "./assets/treasures/12_cesium_man.glb", fit: 1.25 },
+            { id: "cesiumMilkTruck", name: "銀河配達車", url: "./assets/treasures/13_cesium_milk_truck.glb", fit: 1.15 },
+            { id: "corset", name: "古い儀礼用コルセット", url: "./assets/treasures/14_corset.glb", fit: 1.05 },
+            { id: "glamVelvetSofa", name: "小型ベルベットソファ", url: "./assets/treasures/15_glam_velvet_sofa.glb", fit: 1.05 },
+            { id: "sheenChair", name: "深緑の椅子", url: "./assets/treasures/16_sheen_chair.glb", fit: 1.10 },
+            { id: "toyCar", name: "古い玩具の車", url: "./assets/treasures/17_toy_car.glb", fit: 1.00 },
+            { id: "mosquitoInAmber", name: "琥珀に閉じ込められた標本", url: "./assets/treasures/18_mosquito_in_amber.glb", fit: 1.05 },
+            { id: "metalRoughSpheres", name: "金属球の研究標本", url: "./assets/treasures/19_metal_rough_spheres.glb", fit: 1.05 },
+            { id: "transmissionRoughness", name: "透明鉱石の標本", url: "./assets/treasures/20_transmission_roughness.glb", fit: 1.00 },
+            { id: "specGloss", name: "光沢比較標本", url: "./assets/treasures/21_spec_gloss.glb", fit: 1.00 },
+            { id: "riggedFigure", name: "関節人形の模型", url: "./assets/treasures/22_rigged_figure.glb", fit: 1.15 },
+            { id: "riggedSimple", name: "小さな木製人形", url: "./assets/treasures/23_rigged_simple.glb", fit: 1.10 },
+            { id: "morphPrimitives", name: "変形する幾何標本", url: "./assets/treasures/24_morph_primitives.glb", fit: 1.05 },
+            { id: "animatedMorphCube", name: "変化する立方体標本", url: "./assets/treasures/25_animated_morph_cube.glb", fit: 1.00 },
+            { id: "boxAnimated", name: "封印箱の模型", url: "./assets/treasures/26_box_animated.glb", fit: .95 },
+            { id: "boxTextured", name: "紋様入りの箱", url: "./assets/treasures/27_box_textured.glb", fit: .95 },
+            { id: "boxInterleaved", name: "黒曜石の箱", url: "./assets/treasures/28_box_interleaved.glb", fit: .95 },
+            { id: "multiUV", name: "多層文様の板", url: "./assets/treasures/29_multi_uv.glb", fit: 1.0 },
+            { id: "normalTangentMirror", name: "鏡面装飾の標本", url: "./assets/treasures/30_normal_tangent_mirror.glb", fit: 1.0 },
+            { id: "textureSettings", name: "織物模様の標本", url: "./assets/treasures/31_texture_settings.glb", fit: 1.0 },
+            { id: "textureLinear", name: "古代の色見本", url: "./assets/treasures/32_texture_linear.glb", fit: 1.0 },
+            { id: "orientationTest", name: "方位儀の模型", url: "./assets/treasures/33_orientation_test.glb", fit: 1.0 },
+            { id: "attenuationTest", name: "淡く光るガラス器", url: "./assets/treasures/34_attenuation_test.glb", fit: 1.0 }
+        ];
+
+        const ui = { menu: document.getElementById("menu"), clear: document.getElementById("clear"), start: document.getElementById("start"), mute: document.getElementById("mute"), count: document.getElementById("count"), timer: document.getElementById("timerText"), status: document.getElementById("status"), exit: document.getElementById("exitState"), prompt: document.getElementById("prompt"), msg: document.getElementById("msg"), chips: document.getElementById("chips"), staminaText: document.getElementById("staminaText"), staminaFill: document.getElementById("staminaFill"), map: document.getElementById("mapCanvas"), volumeSlider: document.getElementById("volumeSlider"), volumeValue: document.getElementById("volumeValue"), sensitivitySlider: document.getElementById("sensitivitySlider"), sensitivityValue: document.getElementById("sensitivityValue"), inventoryModal: document.getElementById("inventoryModal"), inventoryItems: document.getElementById("inventoryItems"), inventoryClose: document.getElementById("inventoryClose"), inventoryCanvas: document.getElementById("inventoryCanvas"), inventoryPreviewName: document.getElementById("inventoryPreviewName"), catalogOpen: document.getElementById("catalogOpen"), catalogClose: document.getElementById("catalogClose"), catalogModal: document.getElementById("catalogModal"), catalogSearch: document.getElementById("catalogSearch"), catalogModalGrid: document.getElementById("catalogModalGrid"), catalogCanvas: document.getElementById("catalogCanvas"), catalogPreviewName: document.getElementById("catalogPreviewName"), expeditionResult: document.getElementById("expeditionResult"), expeditionStats: document.getElementById("expeditionStats"), expeditionItems: document.getElementById("expeditionItems"), expeditionClose: document.getElementById("expeditionClose") };
+        const mapCtx = ui.map.getContext("2d");
+        const WORLD = { x: 48, z: 76 };
+        const REQUIRED_COUNT = 5;
+        const EXPEDITION_TIME = 180;
+        const DISCOVERY_KEY = "lostExhibitHunter.discoveredTreasures.v1";
+        const DISCOVERY_COUNT_KEY = "lostExhibitHunter.discoveredTreasureCounts.v1";
+        const SETTINGS = { bgmPercent: 50, sensitivityPercent: 50, maxBgmVolume: .12, maxSensitivity: .0012 };
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x01030a); scene.fog = new THREE.FogExp2(0x01030a, .020);
+        const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, .1, 180);
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.shadowMap.enabled = false; renderer.outputColorSpace = THREE.SRGBColorSpace; document.body.appendChild(renderer.domElement);
+        const loader = new GLTFLoader(), clock = new THREE.Clock();
+        const keys = new Set(), blockers = [], boxes = [], pickups = [], buildingChestSpots = [], floorZones = [], ladders = [], enterableHomes = [];
+        const HOUSE_SITES = [
+            [-22, -60, "east"],
+            [22, -24, "west"],
+            [-22, 4, "east"],
+            [22, 34, "west"],
+            [-22, 50, "east"]
+        ];
+        function intersectsAnyHouseZone(x, z, w = 0, d = 0, pad = 0) {
+            for (const s of HOUSE_SITES) {
+                const hx = s[0], hz = s[1];
+                const hw = 4.5 + (w || 0) / 2 + pad;
+                const hd = 4.0 + (d || 0) / 2 + pad;
+                if (Math.abs(x - hx) < hw && Math.abs(z - hz) < hd) return true;
+            }
+            return false;
+        }
+        function clearNearHouseEntrance(x, z) {
+            return !intersectsAnyHouseZone(x, z, 0, 0, 6.2);
+        }
+        function clearNearHouseBody(x, z, w = 0, d = 0) {
+            return !intersectsAnyHouseZone(x, z, w, d, 3.8);
+        }
+        function insideWorld(x, z, margin = 2) {
+            return Math.abs(x) < WORLD.x - margin && Math.abs(z) < WORLD.z - margin;
+        }
+        const player = { pos: new THREE.Vector3(0, 1.75, 66), yaw: 0, pitch: 0, speed: 4.1, radius: .42, groundY: 1.75, yVel: 0, grounded: true, wantJump: false, stamina: 100, maxStamina: 100, sprinting: false };
+        let started = false, cleared = false, muted = false, nearest = null, nearestLadder = null, msgTimer = 0, footTimer = 0, flicker = 0, collected = new Set(), inventory = [], expeditionItems = [], expeditionFound = new Set(), discovered = new Set(), discoveredCounts = {}, expeditionTime = EXPEDITION_TIME, expeditionEnded = false, showChestsOnMap = false, exitLight, audioCtx, bgmAudio, gateConfirm = false, inventoryOpen = false, inventoryRenderer = null, inventoryScene = null, inventoryCamera = null, inventoryModel = null, inventoryPreviewIndex = 0, inventoryPreviewRequestId = 0, catalogRenderer = null, catalogScene = null, catalogCamera = null, catalogModel = null, catalogSelectedIndex = 0, catalogPreviewRequestId = 0, shootingStars = [];
+        const PREVIEW_TWEAKS = {
+            antiqueCamera:{y:-0.02,z:1.03}, lantern:{y:-0.02,z:1.03}, waterBottle:{y:-0.01,z:1.02}, boombox:{y:-0.03,z:1.02},
+            avocado:{y:0,z:1}, duck:{y:0,z:1}, damagedHelmet:{y:-0.02,z:1.02}, fox:{y:-0.03,z:1.04}, fish:{y:-0.02,z:1.03},
+            gearbox:{y:-0.03,z:1.04}, brainstem:{y:-0.04,z:1.06}, cesiumMan:{y:-0.05,z:1.05}, cesiumMilkTruck:{y:-0.03,z:1.05},
+            flightHelmet:{y:-0.02,z:1.03}, sciFiHelmet:{y:-0.02,z:1.03}, corset:{y:-0.03,z:1.04}, stainedGlassLamp:{y:-0.02,z:1.03},
+            glamVelvetSofa:{y:-0.04,z:1.05}, sheenChair:{y:-0.04,z:1.04}, reciprocatingSaw:{y:-0.04,z:1.08}, "2CylinderEngine":{y:-0.03,z:1.05},
+            toyCar:{y:-0.02,z:1.03}, buggy:{y:-0.02,z:1.04}, mosquitoInAmber:{y:-0.02,z:1.03}, metalRoughSpheres:{y:-0.03,z:1.05},
+            transmissionRoughness:{y:-0.02,z:1.04}, specGloss:{y:-0.02,z:1.04}, vc:{y:-0.03,z:1.04}, riggedFigure:{y:-0.04,z:1.06},
+            riggedSimple:{y:-0.03,z:1.05}, simpleSkin:{y:-0.03,z:1.05}, morphPrimitives:{y:-0.02,z:1.04}, animatedMorphSphere:{y:0,z:1.02},
+            animatedMorphCube:{y:0,z:1.02}, animatedCube:{y:0,z:1.02}, boxAnimated:{y:0,z:1.02}, boxTextured:{y:0,z:1.02},
+            boxInterleaved:{y:0,z:1.02}, cube:{y:0,z:1.0}, multiUV:{y:-0.02,z:1.04}, normalTangentMirror:{y:-0.02,z:1.04},
+            textureSettings:{y:-0.02,z:1.04}, textureLinear:{y:-0.02,z:1.04}, twoSidedPlane:{y:-0.02,z:1.04}, simpleMeshes:{y:-0.02,z:1.04},
+            simpleMorph:{y:-0.02,z:1.04}, simpleSparseAccessor:{y:-0.02,z:1.04}, orientationTest:{y:-0.02,z:1.04}, cameras:{y:-0.02,z:1.04},
+            attenuationTest:{y:-0.02,z:1.04}
+        };
+
+        initScene(); initUI(); animate();
+
+        function initScene() { addNightSky(); addMountainRing(); scene.add(new THREE.HemisphereLight(0x263a5c, 0x020204, .55)); const moon = new THREE.DirectionalLight(0xb9d4ff, .55); moon.position.set(-20, 30, 10); moon.castShadow = true; scene.add(moon); const street = new THREE.Mesh(new THREE.PlaneGeometry(96, 146), new THREE.MeshStandardMaterial({ color: 0x0c111c, roughness: .82 })); street.rotation.x = -Math.PI / 2; street.receiveShadow = true; scene.add(street); grid(); city(); exitBuild(); spawnBoxes(); chips(); }
+
+        function addNightSky() {
+            const skyDome = new THREE.Mesh(
+                new THREE.SphereGeometry(300, 32, 20),
+                new THREE.MeshBasicMaterial({ color: 0x07111f, side: THREE.BackSide, fog: false })
+            );
+            scene.add(skyDome);
+
+            const starGeo = new THREE.BufferGeometry();
+            const pts = [];
+            for (let i = 0; i < 6400; i++) {
+                const r = 105 + Math.random() * 155;
+                const a = Math.random() * Math.PI * 2;
+                const y = 18 + Math.random() * 120;
+                pts.push(Math.cos(a) * r, y, Math.sin(a) * r);
+            }
+            for (let i = 0; i < 3600; i++) {
+                const x = (Math.random() * 2 - 1) * 120;
+                const z = (Math.random() * 2 - 1) * 160;
+                const y = 85 + Math.random() * 95;
+                pts.push(x, y, z);
+            }
+            starGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+            const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xf2f7ff, size: .42, transparent: true, opacity: .98, sizeAttenuation: true }));
+            scene.add(stars);
+
+            const brightGeo = new THREE.BufferGeometry();
+            const bright = [];
+            for (let i = 0; i < 980; i++) {
+                const r = 110 + Math.random() * 150;
+                const a = Math.random() * Math.PI * 2;
+                const y = 22 + Math.random() * 118;
+                bright.push(Math.cos(a) * r, y, Math.sin(a) * r);
+            }
+            for (let i = 0; i < 540; i++) {
+                bright.push((Math.random() * 2 - 1) * 126, 92 + Math.random() * 92, (Math.random() * 2 - 1) * 168);
+            }
+            brightGeo.setAttribute("position", new THREE.Float32BufferAttribute(bright, 3));
+            const brightStars = new THREE.Points(brightGeo, new THREE.PointsMaterial({ color: 0xffffff, size: .82, transparent: true, opacity: 1, sizeAttenuation: true }));
+            scene.add(brightStars);
+
+            const accentGeo = new THREE.BufferGeometry();
+            const accent = [];
+            for (let i = 0; i < 220; i++) {
+                accent.push((Math.random() * 2 - 1) * 128, 96 + Math.random() * 88, (Math.random() * 2 - 1) * 170);
+            }
+            accentGeo.setAttribute("position", new THREE.Float32BufferAttribute(accent, 3));
+            const accentStars = new THREE.Points(accentGeo, new THREE.PointsMaterial({ color: 0xbfe2ff, size: 1.45, transparent: true, opacity: .95, sizeAttenuation: true }));
+            scene.add(accentStars);
+
+            const galaxy = new THREE.Mesh(new THREE.TorusGeometry(200, 18, 18, 220), new THREE.MeshBasicMaterial({ color: 0x92a8ff, transparent: true, opacity: .08, side: THREE.DoubleSide }));
+            galaxy.rotation.x = Math.PI / 2.35;
+            galaxy.rotation.z = .42;
+            galaxy.position.y = 82;
+            scene.add(galaxy);
+            const galaxy2 = new THREE.Mesh(new THREE.TorusGeometry(200, 10, 12, 220), new THREE.MeshBasicMaterial({ color: 0xd7e2ff, transparent: true, opacity: .05, side: THREE.DoubleSide }));
+            galaxy2.rotation.x = Math.PI / 2.35;
+            galaxy2.rotation.z = .42;
+            galaxy2.position.y = 82;
+            scene.add(galaxy2);
+
+            const moonDisc = new THREE.Mesh(new THREE.SphereGeometry(3.1, 32, 16), new THREE.MeshBasicMaterial({ color: 0xe8efff }));
+            moonDisc.position.set(-42, 56, -74);
+            scene.add(moonDisc);
+            const moonGlow = new THREE.PointLight(0xc9dcff, 1.08, 130);
+            moonGlow.position.copy(moonDisc.position);
+            scene.add(moonGlow);
+            createShootingStars();
+        }
+
+
+        function addMountainRing() {
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x0d1320, roughness: .94, emissive: 0x122038, emissiveIntensity: .34 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x24324d, roughness: .86, emissive: 0x314768, emissiveIntensity: .18 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x9fc5ff, roughness: .22, metalness: .1, emissive: 0x6da8ff, emissiveIntensity: .10, transparent: true, opacity: .9 });
+            function litWindow(w = 0.78, h = 1.05, color = 0xffe4a8) {
+                return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .92, side: THREE.DoubleSide }));
+            }
+            function makeTower(w, d, h, windowCols = 3, windowRows = 8) {
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), baseMat.clone());
+                body.position.y = h / 2;
+                body.castShadow = body.receiveShadow = true;
+                g.add(body);
+                const cornice = new THREE.Mesh(new THREE.BoxGeometry(w * 1.04, .38, d * 1.04), trimMat.clone());
+                cornice.position.y = h + .18;
+                g.add(cornice);
+                const lobby = new THREE.Mesh(new THREE.BoxGeometry(w * .66, h * .07, d * .66), glassMat.clone());
+                lobby.position.set(0, h * .05, d * .50 + 0.02);
+                g.add(lobby);
+                const windowColors = [0xffd591, 0xffefb8, 0xb6f2ff, 0xffc0d5];
+                const gapX = w / (windowCols + 1);
+                const gapY = (h - 2.8) / (windowRows + 1);
+                for (let face = 0; face < 2; face++) {
+                    const z = face === 0 ? d / 2 + 0.03 : -d / 2 - 0.03;
+                    const rot = face === 0 ? 0 : Math.PI;
+                    for (let r = 0; r < windowRows; r++) {
+                        for (let c = 0; c < windowCols; c++) {
+                            if (Math.random() < 0.14) continue;
+                            const win = litWindow(Math.min(1.05, gapX * .56), Math.min(1.25, gapY * .48), windowColors[(r + c + Math.floor(Math.random() * 4)) % windowColors.length]);
+                            win.position.set(-w / 2 + gapX * (c + 1), 2.1 + gapY * (r + 1), z);
+                            win.rotation.y = rot;
+                            g.add(win);
+                        }
+                    }
+                }
+                return g;
+            }
+            function addSide(direction) {
+                const isVertical = direction === 'left' || direction === 'right';
+                const sign = (direction === 'left' || direction === 'top') ? -1 : 1;
+                const total = isVertical ? 18 : 13;
+                for (let i = 0; i < total; i++) {
+                    const t = (i / (total - 1) - 0.5);
+                    const towerW = 4.2 + Math.random() * 4.6;
+                    const towerD = 4.2 + Math.random() * 4.8;
+                    const towerH = 12 + Math.random() * 28;
+                    const cols = Math.max(2, Math.round(towerW / 1.6));
+                    const rows = Math.max(6, Math.round(towerH / 2.7));
+                    const tower = makeTower(towerW, towerD, towerH, cols, rows);
+                    if (isVertical) {
+                        tower.position.set(sign * (WORLD.x + 18 + Math.random() * 10), 0, t * (WORLD.z * 2 + 34) + (Math.random() * 6 - 3));
+                        tower.rotation.y = sign < 0 ? Math.PI / 2 : -Math.PI / 2;
+                    } else {
+                        tower.position.set(t * (WORLD.x * 2 + 26) + (Math.random() * 6 - 3), 0, sign * (WORLD.z + 18 + Math.random() * 10));
+                        tower.rotation.y = sign < 0 ? 0 : Math.PI;
+                    }
+                    scene.add(tower);
+                }
+            }
+            addSide('left');
+            addSide('right');
+            addSide('top');
+            addSide('bottom');
+        }
+
+        function createShootingStars() {
+            shootingStars = [];
+            for (let i = 0; i < 5; i++) {
+                const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(-2.8, -.45, 0)]);
+                const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+                const line = new THREE.Line(geo, mat);
+                line.visible = false;
+                scene.add(line);
+                shootingStars.push({ line, active: false, t: 0, dur: 1.2 + Math.random() * .8, cool: 1.8 + Math.random() * 6, pos: new THREE.Vector3(), vel: new THREE.Vector3() });
+            }
+        }
+        function updateShootingStars(dt) {
+            for (const s of shootingStars) {
+                if (!s.active) {
+                    s.cool -= dt;
+                    if (s.cool <= 0) {
+                        s.active = true; s.t = 0; s.dur = 1.0 + Math.random() * 1.1;
+                        s.pos.set((Math.random() * 2 - 1) * 62, 34 + Math.random() * 28, -70 + Math.random() * 50);
+                        s.vel.set(-14 - Math.random() * 10, -4.5 - Math.random() * 2.5, 3 + Math.random() * 8);
+                        s.line.position.copy(s.pos);
+                        s.line.rotation.y = Math.atan2(s.vel.x, s.vel.z) + Math.PI / 2;
+                        s.line.rotation.z = -0.08;
+                        s.line.visible = true;
+                        s.line.material.opacity = .95;
+                    }
+                } else {
+                    s.t += dt;
+                    s.pos.addScaledVector(s.vel, dt);
+                    s.line.position.copy(s.pos);
+                    s.line.material.opacity = Math.max(0, .95 - (s.t / s.dur));
+                    if (s.t >= s.dur) {
+                        s.active = false;
+                        s.line.visible = false;
+                        s.cool = 3.5 + Math.random() * 8.0;
+                    }
+                }
+            }
+        }
+
+        function grid() { const mat = new THREE.LineBasicMaterial({ color: 0x223148, transparent: true, opacity: .24 }); for (let x = -35; x <= 35; x += 4)scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, .012, -45), new THREE.Vector3(x, .012, 45)]), mat)); for (let z = -44; z <= 44; z += 4)scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-35, .014, z), new THREE.Vector3(35, .014, z)]), mat)); }
+        function makeBox(x, y, z, w, h, d, mat, sh = true) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = sh; m.receiveShadow = true; scene.add(m); return m; }
+        function city() {
+            const road = new THREE.MeshStandardMaterial({ color: 0x070b13, roughness: .92 });
+            const cobble = new THREE.MeshStandardMaterial({ color: 0x151923, roughness: .88 });
+            const plaza = new THREE.MeshStandardMaterial({ color: 0x1a1d28, roughness: .86 });
+            const stone = new THREE.MeshStandardMaterial({ color: 0x2a2c34, roughness: .86 });
+            const trim = new THREE.MeshStandardMaterial({ color: 0x202a3d, roughness: .76 });
+
+            // Larger maze-like city fabric: several loops, side paths, parks, and dead-end-like pockets.
+            makeBox(0, .035, 0, 5.8, .07, 140, road, false);
+            makeBox(-11, .05, 0, 7.2, .1, 140, cobble, false);
+            makeBox(11, .05, 0, 7.2, .1, 140, cobble, false);
+            makeBox(0, .05, -54, 78, .08, 5, cobble, false);
+            makeBox(0, .05, -32, 78, .08, 4.5, cobble, false);
+            makeBox(0, .05, -8, 78, .08, 4.5, cobble, false);
+            makeBox(0, .05, 17, 78, .08, 4.5, cobble, false);
+            makeBox(0, .05, 41, 78, .08, 4.5, cobble, false);
+            makeBox(0, .05, 64, 78, .08, 5, cobble, false);
+            makeBox(-27, .055, 12, 14, .09, 20, plaza, false); // western park
+            makeBox(27, -.055, -34, 14, .09, 22, plaza, false); // eastern small park
+
+            // Procedural European buildings still frame the walkable streets.
+            const edge = [
+                [-38, -66, 8, 15, 8, "brick", "east"], [-38, -53, 9, 13, 8, "cream", "east"], [-38, -39, 8, 18, 8, "stone", "east"], [-38, -23, 9, 12, 8, "shop", "east"], [-38, -8, 8, 19, 8, "tower", "east"], [-38, 8, 9, 13, 8, "brick", "east"], [-38, 25, 8, 17, 8, "cream", "east"], [-38, 43, 10, 12, 8, "stone", "east"], [-38, 60, 9, 16, 8, "tower", "east"],
+                [38, -66, 9, 13, 8, "cream", "west"], [38, -51, 8, 19, 8, "tower", "west"], [38, -36, 10, 12, 8, "brick", "west"], [38, -18, 8, 16, 8, "stone", "west"], [38, 0, 8, 18, 8, "shop", "west"], [38, 17, 9, 14, 8, "cream", "west"], [38, 34, 8, 18, 8, "brick", "west"], [38, 52, 9, 12, 8, "stone", "west"], [38, 67, 10, 15, 8, "tower", "west"],
+                [-18, -73, 8, 10, 7, "shop", "north"], [-6, -73, 8, 12, 7, "stone", "north"], [6, -73, 8, 11, 7, "brick", "north"], [18, -73, 8, 10, 7, "shop", "north"],
+                [-18, 73, 8, 11, 7, "cream", "south"], [-6, 73, 8, 13, 7, "tower", "south"], [6, 73, 8, 10, 7, "brick", "south"], [18, 73, 8, 11, 7, "stone", "south"]
+            ];
+            edge.forEach((b, i) => addEuropeanBuilding(...b, i));
+
+            // Inner blocks create loops and mild confusion. Gaps remain walkable.
+            const inner = [
+                [-14, -58, 7, 9, 6, "shop", "south"], [14, -58, 7, 10, 6, "brick", "south"],
+                [-27, -43, 6, 10, 6, "cream", "east"], [27, -45, 6, 9, 6, "stone", "west"],
+                [-13, -24, 6, 9, 6, "stone", "north"], [14, -18, 6, 10, 6, "shop", "west"],
+                [-26, -2, 6, 12, 6, "tower", "east"], [27, 8, 6, 9, 6, "brick", "west"],
+                [-12, 27, 7, 9, 6, "stone", "north"], [13, 30, 6, 8, 6, "shop", "west"],
+                [-26, 48, 6, 10, 6, "brick", "east"], [27, 55, 6, 12, 6, "cream", "west"],
+                [-4, 52, 7, 8, 6, "brick", "south"], [8, 52, 7, 9, 6, "cream", "south"]
+            ];
+            inner.filter(b => clearNearHouseBody(b[0], b[1], b[2], b[4])).forEach((b, i) => addEuropeanBuilding(...b, 100 + i));
+            addDenseQuarter();
+            addEnterableBuildings();
+            addMarketDetails();
+            /* floating facade signs removed */
+
+            // Use external architecture models as the major buildings/landmarks.
+            loadExternalArchitecture();
+
+            // Landmark arcade.
+            addArch(-8, -54); addArch(8, -54);
+            const sign = textSprite("OLD ARCADE", "#ffd166");
+            sign.position.set(0, 5.4, -55.4); sign.scale.set(4.8, 1.0, 1); scene.add(sign);
+
+            // Low walls, fences, benches, and obstacles to make box searching require detours.
+            const lowWalls = [
+                [-8, -45, 10, .35, 1.0], [9, -45, 9, .35, 1.0],
+                [-18, -27, 1.0, .35, 8], [18, -27, 1.0, .35, 8],
+                [-7, -4, 10, .35, 1.0], [9, -1, 9, .35, 1.0],
+                [-18, 21, 1.0, .35, 10], [18, 19, 1.0, .35, 8],
+                [-8, 39, 10, .35, 1.0], [8, 42, 9, .35, 1.0],
+                [-29, 4, 1.0, .35, 12], [29, -37, 1.0, .35, 12],
+                [-3, 11, 1.0, .35, 8], [3, 26, 1.0, .35, 8], [-3, -35, 1.0, .35, 8]
+            ];
+            lowWalls.filter(p => clearNearHouseBody(p[0], p[1], p[2], p[4])).forEach((p, i) => { makeBox(p[0], .55, p[1], p[2], .75, p[4], trim); blockers.push({ x: p[0], z: p[1], w: p[2] + .5, d: p[4] + .5, jumpable: true }); });
+
+            if (clearNearHouseBody(-27, 12, 12, 12)) addPark(-27, 12);
+            if (clearNearHouseBody(27, -34, 12, 12)) addPark(27, -34, true);
+            if (clearNearHouseBody(0, 57, 12, 12)) addPark(0, 57, true);
+
+            // Street lights along loops.
+            const lamps = [[-17, -62], [17, -64], [-17, -46], [17, -44], [-17, -25], [17, -22], [-17, -6], [17, 0], [-17, 18], [17, 17], [-17, 37], [17, 39], [-17, 59], [17, 60], [-4, -18], [5, 13], [-6, 31], [8, -36], [-29, 22], [29, -25]];
+            lamps.filter(p => clearNearHouseEntrance(p[0], p[1])).forEach((p, i) => addStreetLight(p[0], p[1], i));
+
+            // 3D vegetation model + fallback.
+            const trees = [[-7, -66], [7, -65], [-7, -50], [7, -48], [-7, -30], [7, -27], [-7, -10], [7, -7], [-7, 10], [7, 12], [-7, 31], [7, 33], [-7, 52], [7, 56], [-31, 8], [-27, 8], [-31, 16], [-27, 18], [24, -40], [31, -40], [24, -30], [31, -28], [-27, 57], [-21, 57], [-2, 54], [3, 60], [22, 62]];
+            const borderTrees = [];
+            for (let z = -74; z <= 74; z += 7) { borderTrees.push([-47, z], [47, z]); }
+            for (let x = -42; x <= 42; x += 7) { borderTrees.push([x, -74], [x, 74]); }
+            loadTreeModel(trees.filter(p => clearNearHouseBody(p[0], p[1])));
+            addForestWall();
+
+            const planterPositions = [[-12, -50], [-2, -50], [11, -40], [2, -40], [-11, -13], [-2, -13], [11, 4], [2, 4], [-19, 28], [19, -14], [-14, 62], [14, -62], [-20, 3], [20, 10], [-31, 26], [31, -47], [-5, 45], [5, 45]];
+            planterPositions.filter(p => clearNearHouseBody(p[0], p[1], 2.8, 1.4)).forEach((p, i) => addPlanter(p[0], p[1], i));
+            [[-32, -12], [-32, 42], [32, 6], [32, 50], [-12, -40], [12, -54], [-12, 48], [12, 28]].filter(p => clearNearHouseBody(p[0], p[1], 2.2, 2.2)).forEach((p, i) => addCypress(p[0], p[1], i));
+        }
+
+        function addDenseQuarter() {
+            const dense = [
+                [-10, -68, 5, 8, 5, "shop", "south"], [10, -64, 5, 9, 5, "cream", "south"],
+                [-9, -48, 5, 8, 5, "brick", "east"], [9, -42, 5, 9, 5, "stone", "west"],
+                [-12, -14, 5, 10, 5, "cream", "east"], [12, -10, 5, 9, 5, "shop", "west"],
+                [-10, 6, 5, 8, 5, "brick", "east"], [10, 12, 5, 10, 5, "stone", "west"],
+                [-12, 34, 5, 9, 5, "shop", "north"], [12, 36, 5, 8, 5, "cream", "north"],
+                [-10, 58, 5, 9, 5, "stone", "south"], [10, 55, 5, 9, 5, "brick", "south"],
+                [-4, -26, 4.6, 7, 4.6, "shop", "north"], [4, -31, 4.6, 7, 4.6, "cream", "south"],
+                [-4, 23, 4.6, 7, 4.6, "brick", "north"], [4, 48, 4.6, 7, 4.6, "stone", "south"]
+            ];
+            dense.filter(b => clearNearHouseBody(b[0], b[1], b[2], b[4])).forEach((b, i) => addEuropeanBuilding(...b, 220 + i));
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2b2f3b, roughness: .82 });
+            [[-5, -57, 4, .55, .8], [5, -52, 4, .55, .8], [-5, -22, 4, .55, .8], [5, -17, 4, .55, .8], [-5, 28, 4, .55, .8], [5, 32, 4, .55, .8], [-5, 61, 4, .55, .8], [5, 60, 4, .55, .8]].filter(p => clearNearHouseBody(p[0], p[1], p[2], p[4])).forEach(p => {
+                makeBox(p[0], .52, p[1], p[2], p[3], p[4], mat);
+                blockers.push({ x: p[0], z: p[1], w: p[2] + .4, d: p[4] + .4 });
+            });
+        }
+
+
+        function addEnterableBuildings() {
+            HOUSE_SITES.forEach((s, i) => addEnterableHouse(s[0], s[1], s[2], i));
+        }
+        function addEnterableHouse(x, z, front, i) {
+            const w = 9, d = 8, h = 5.2, secondY = 4.15, topY = secondY + 1.67;
+            const wallMat = new THREE.MeshStandardMaterial({ color: i % 2 ? 0x3d3340 : 0x342b34, roughness: .86 });
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x241b16, roughness: .84 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x6b5b48, roughness: .62 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: i % 2 ? 0x3d1518 : 0x18213a, roughness: .84 });
+            const wallT = .36;
+
+            makeBox(x, .08, z, w, .16, d, floorMat);
+            makeBox(x, secondY, z, w, .18, d, floorMat);
+            addGableRoof(x, h + .1, z, w + .8, d + .8, 1.4, roofMat, front === "east" || front === "west");
+            addLuxuryHouseExterior(x, z, w, d, h, front, i);
+
+            // Walls with a doorway gap.
+            if (front === "east") {
+                makeBox(x - w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x, h / 2, z - d / 2, w, h, wallT, wallMat);
+                makeBox(x, h / 2, z + d / 2, w, h, wallT, wallMat);
+                makeBox(x + w / 2, h / 2, z - 2.75, wallT, h, 2.5, wallMat);
+                makeBox(x + w / 2, h / 2, z + 2.75, wallT, h, 2.5, wallMat);
+            } else if (front === "west") {
+                makeBox(x + w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x, h / 2, z - d / 2, w, h, wallT, wallMat);
+                makeBox(x, h / 2, z + d / 2, w, h, wallT, wallMat);
+                makeBox(x - w / 2, h / 2, z - 2.75, wallT, h, 2.5, wallMat);
+                makeBox(x - w / 2, h / 2, z + 2.75, wallT, h, 2.5, wallMat);
+            } else if (front === "south") {
+                makeBox(x - w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x + w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x, h / 2, z - d / 2, w, h, wallT, wallMat);
+                makeBox(x - 2.75, h / 2, z + d / 2, 2.5, h, wallT, wallMat);
+                makeBox(x + 2.75, h / 2, z + d / 2, 2.5, h, wallT, wallMat);
+            } else {
+                makeBox(x - w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x + w / 2, h / 2, z, wallT, h, d, wallMat);
+                makeBox(x, h / 2, z + d / 2, w, h, wallT, wallMat);
+                makeBox(x - 2.75, h / 2, z - d / 2, 2.5, h, wallT, wallMat);
+                makeBox(x + 2.75, h / 2, z - d / 2, 2.5, h, wallT, wallMat);
+            }
+
+            addHouseCollisionWithDoor(x, z, w, d, front);
+            addEnterableMarker(x, z, w, d, front, i);
+            enterableHomes.push({ x, z, w, d });
+
+            // 2F floor only works after ladder transport; entering 1F will never auto-teleport up.
+            const secondEyeY = secondY + 1.75;
+            const secondChestY = secondY + 0.95;
+            floorZones.push({ x, z, w: w - 1.1, d: d - 1.1, y: secondEyeY });
+            let ladderX = x, ladderZ = z;
+            if (front === "east") { ladderX = x + w / 2 - 1.45; ladderZ = z + 1.35; }
+            else if (front === "west") { ladderX = x - w / 2 + 1.45; ladderZ = z + 1.35; }
+            else if (front === "south") { ladderX = x - 1.2; ladderZ = z + d / 2 - 1.45; }
+            else { ladderX = x - 1.2; ladderZ = z - d / 2 + 1.45; }
+            addLadder(ladderX, ladderZ, secondEyeY, i);
+
+            addInteriorFurniture(x, z, w, d, i, secondY, front);
+
+            // Ground-floor and second-floor chest spots.
+            buildingChestSpots.push(
+                [x + 2.3, z - 1.7, 1, .30],
+                [x - 2.0, z + 2.0, 1, .30],
+                [x + 2.0, z + 0.2, 1, .30],
+                [x - 2.0, z + 1.9, secondChestY, .30],
+                [x + 1.9, z + 2.2, secondChestY, .30],
+                [x + 1.8, z - 2.0, secondChestY, .30],
+                [x - 1.6, z - 1.8, secondChestY, .30]
+            );
+        }
+        function addLuxuryHouseExterior(x, z, w, d, h, front, i) {
+            const stoneMat = new THREE.MeshStandardMaterial({ color: i % 2 ? 0xc8b89f : 0xbec4cf, roughness: .78 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0xe7ddcd, roughness: .56 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0xc3ddfa, roughness: .12, metalness: .04, transparent: true, opacity: .56 });
+            const stepMat = new THREE.MeshStandardMaterial({ color: 0x554b45, roughness: .82 });
+            makeBox(x, .05, z, w + .34, .10, d + .34, stoneMat, false);
+            [-1, 1].forEach(sx => [-1, 1].forEach(sz => makeBox(x + sx * (w / 2 - .24), h / 2, z + sz * (d / 2 - .24), .16, h, .16, trimMat, false)));
+            const frontIsX = (front === "east" || front === "west");
+            const signX = front === "east" ? 1 : front === "west" ? -1 : 0;
+            const signZ = front === "south" ? 1 : front === "north" ? -1 : 0;
+            const addWindow = (wx, wy, wz, alongX = true) => {
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(alongX ? .16 : 1.18, 1.45, alongX ? 1.18 : .16), trimMat);
+                frame.position.set(wx, wy, wz); frame.castShadow = frame.receiveShadow = true; scene.add(frame);
+                const glass = new THREE.Mesh(new THREE.BoxGeometry(alongX ? .05 : .96, 1.12, alongX ? .96 : .05), glassMat);
+                glass.position.set(alongX ? wx - signX * .06 : wx, wy, alongX ? wz : wz - signZ * .06); glass.receiveShadow = true; scene.add(glass);
+                if (alongX) {
+                    makeBox(wx, wy + .79, wz, .14, .12, 1.28, trimMat, false);
+                    makeBox(wx, wy - .79, wz, .14, .12, 1.28, trimMat, false);
+                } else {
+                    makeBox(wx, wy + .79, wz, 1.28, .12, .14, trimMat, false);
+                    makeBox(wx, wy - .79, wz, 1.28, .12, .14, trimMat, false);
+                }
+            };
+            [-2.25, 2.25].forEach(off => {
+                if (frontIsX) { addWindow(x + (w / 2 + .03) * signX, 2.05, z + off, true); addWindow(x + (w / 2 + .03) * signX, 4.15, z + off, true); }
+                else { addWindow(x + off, 2.05, z + (d / 2 + .03) * signZ, false); addWindow(x + off, 4.15, z + (d / 2 + .03) * signZ, false); }
+            });
+            [-2.3, 0, 2.3].forEach(off => {
+                if (frontIsX) { addWindow(x - (w / 2 + .03) * signX, 2.05, z + off, true); addWindow(x - (w / 2 + .03) * signX, 4.15, z + off, true); }
+                else { addWindow(x + off, 2.05, z - (d / 2 + .03) * signZ, false); addWindow(x + off, 4.15, z - (d / 2 + .03) * signZ, false); }
+            });
+            [-1, 1].forEach(side => {
+                [-1.7, 1.7].forEach(off => {
+                    addWindow(x + off, 2.05, z + side * (d / 2 + .03), false);
+                    addWindow(x + off, 4.15, z + side * (d / 2 + .03), false);
+                });
+            });
+            // keep the entry visually open: threshold and short steps only, no door slab or canopy.
+            if (frontIsX) {
+                makeBox(x + (w / 2 + .38) * signX, .08, z, 1.14, .16, 2.10, stepMat, false);
+                makeBox(x + (w / 2 + .84) * signX, .16, z, 1.52, .16, 2.46, stepMat, false);
+            } else {
+                makeBox(x, .08, z + (d / 2 + .38) * signZ, 2.10, .16, 1.14, stepMat, false);
+                makeBox(x, .16, z + (d / 2 + .84) * signZ, 2.46, .16, 1.52, stepMat, false);
+            }
+        }
+        function addHouseCollisionWithDoor(x, z, w, d, front) {
+            const t = .70, gap = 2.55;
+            if (front === "east") {
+                blockers.push({ x: x - w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x, z: z - d / 2, w: w + .3, d: t });
+                blockers.push({ x, z: z + d / 2, w: w + .3, d: t });
+                blockers.push({ x: x + w / 2, z: z - d / 2 + (d - gap) / 4, w: t, d: (d - gap) / 2 });
+                blockers.push({ x: x + w / 2, z: z + d / 2 - (d - gap) / 4, w: t, d: (d - gap) / 2 });
+            } else if (front === "west") {
+                blockers.push({ x: x + w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x, z: z - d / 2, w: w + .3, d: t });
+                blockers.push({ x, z: z + d / 2, w: w + .3, d: t });
+                blockers.push({ x: x - w / 2, z: z - d / 2 + (d - gap) / 4, w: t, d: (d - gap) / 2 });
+                blockers.push({ x: x - w / 2, z: z + d / 2 - (d - gap) / 4, w: t, d: (d - gap) / 2 });
+            } else if (front === "south") {
+                blockers.push({ x: x - w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x: x + w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x, z: z - d / 2, w: w + .3, d: t });
+                blockers.push({ x: x - w / 2 + (w - gap) / 4, z: z + d / 2, w: (w - gap) / 2, d: t });
+                blockers.push({ x: x + w / 2 - (w - gap) / 4, z: z + d / 2, w: (w - gap) / 2, d: t });
+            } else {
+                blockers.push({ x: x - w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x: x + w / 2, z, w: t, d: d + .3 });
+                blockers.push({ x, z: z + d / 2, w: w + .3, d: t });
+                blockers.push({ x: x - w / 2 + (w - gap) / 4, z: z - d / 2, w: (w - gap) / 2, d: t });
+                blockers.push({ x: x + w / 2 - (w - gap) / 4, z: z - d / 2, w: (w - gap) / 2, d: t });
+            }
+        }
+        function addEnterableMarker(x, z, w, d, front, i) {
+            const blue = 0x6f92b8;
+            const glow = new THREE.PointLight(blue, .75, 5);
+            let px = x, pz = z, rot = 0;
+            if (front === "east") { px = x + w / 2 + 1.1; rot = Math.PI / 2; }
+            else if (front === "west") { px = x - w / 2 - 1.1; rot = -Math.PI / 2; }
+            else if (front === "south") { pz = z + d / 2 + 1.1; rot = 0; }
+            else { pz = z - d / 2 - 1.1; rot = Math.PI; }
+            glow.position.set(px, 2.3, pz); scene.add(glow);
+            const mat = new THREE.MeshBasicMaterial({ color: blue, transparent: true, opacity: .30 });
+            const plate = new THREE.Mesh(new THREE.CircleGeometry(1.15, 32), mat);
+            plate.position.set(px, .045, pz);
+            plate.rotation.x = -Math.PI / 2;
+            scene.add(plate);
+            const label = textSprite("2F HOUSE", "#9fb9d8");
+            label.position.set(px, 3.45, pz);
+            label.scale.set(2.7, .42, 1);
+            label.rotation.y = rot;
+            scene.add(label);
+        }
+        function addLadder(x, z, topY, i) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x8d7040, roughness: .55, metalness: .22 });
+            const dark = new THREE.MeshStandardMaterial({ color: 0x392619, roughness: .75 });
+            const group = new THREE.Group();
+            group.position.set(x, 0, z);
+            const rail1 = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, 4.4, 10), mat);
+            rail1.position.set(-.32, 3.2, 0); rail1.rotation.z = 0; group.add(rail1);
+            const rail2 = rail1.clone(); rail2.position.x = .32; group.add(rail2);
+            for (let k = 0; k < 9; k++) {
+                const rung = new THREE.Mesh(new THREE.BoxGeometry(.86, .08, .08), dark);
+                rung.position.set(0, 1.25 + k * .38, 0);
+                group.add(rung);
+            }
+            group.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+            scene.add(group);
+            const label = textSprite("F LADDER", "#9fb9d8");
+            label.position.set(x, 4.9, z);
+            label.scale.set(1.85, .40, 1);
+            scene.add(label);
+            ladders.push({ x, z, bottomY: 1.75, topY });
+        }
+        function addInteriorFurniture(x, z, w, d, i, secondFloorY, front) {
+            // 家具は1階のみ。入口・はしご付近を避け、角ごとに十分離して配置する。
+            if (front === "east") {
+                addSofa(x - 2.15, z - 2.05, 0);
+                addRoundTable(x - 2.45, z + .20);
+                addBookshelf(x - 3.15, z + 2.35);
+                addFloorLamp(x - 1.35, z + 2.15);
+                addPottedPlant(x - 1.55, z - 2.35, 0);
+            } else if (front === "west") {
+                addSofa(x + 2.15, z - 2.05, Math.PI);
+                addRoundTable(x + 2.45, z + .20);
+                addBookshelf(x + 3.15, z + 2.35);
+                addFloorLamp(x + 1.35, z + 2.15);
+                addPottedPlant(x + 1.55, z - 2.35, 0);
+            } else if (front === "south") {
+                addSofa(x - 2.05, z - 2.15, Math.PI / 2);
+                addRoundTable(x + .15, z - 2.35);
+                addBookshelf(x + 2.75, z - 3.05);
+                addFloorLamp(x + 2.45, z - 1.25);
+                addPottedPlant(x - 2.45, z - 1.25, 0);
+            } else {
+                addSofa(x - 2.05, z + 2.15, -Math.PI / 2);
+                addRoundTable(x + .15, z + 2.35);
+                addBookshelf(x + 2.75, z + 3.05);
+                addFloorLamp(x + 2.45, z + 1.25);
+                addPottedPlant(x - 2.45, z + 1.25, 0);
+            }
+        }
+        function addSofa(x, z, rot = 0) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x27364f, roughness: .82 });
+            const leg = new THREE.MeshStandardMaterial({ color: 0x1b130f, roughness: .82 });
+            const g = new THREE.Group(); g.position.set(x, .55, z); g.rotation.y = rot;
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2.1, .45, .82), mat); base.position.y = .15; g.add(base);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, .85, .22), mat); back.position.set(0, .55, -.42); g.add(back);
+            [-.82, .82].forEach(px => { const arm = new THREE.Mesh(new THREE.BoxGeometry(.28, .65, .86), mat); arm.position.set(px, .40, 0); g.add(arm); });
+            [-.75, .75].forEach(px => [-.28, .28].forEach(pz => { const l = new THREE.Mesh(new THREE.BoxGeometry(.12, .32, .12), leg); l.position.set(px, -.18, pz); g.add(l); }));
+            g.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } }); scene.add(g);
+        }
+        function addRoundTable(x, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x6d4d2e, roughness: .65 });
+            const top = new THREE.Mesh(new THREE.CylinderGeometry(.65, .65, .12, 24), mat); top.position.set(x, .82, z); top.castShadow = top.receiveShadow = true; scene.add(top);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(.09, .12, .75, 12), mat); leg.position.set(x, .42, z); leg.castShadow = leg.receiveShadow = true; scene.add(leg);
+        }
+        function addBookshelf(x, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x4a2e20, roughness: .8 });
+            const shelf = makeBox(x, 1.25, z, 1.5, 2.1, .35, mat);
+            for (let k = 0; k < 3; k++)makeBox(x, 0.6 + k * .55, z - .2, 1.35, .06, .08, new THREE.MeshStandardMaterial({ color: 0x231713, roughness: .8 }), false);
+            const colors = [0x7a2736, 0x2d4d5c, 0x6f552c, 0x4a5a73];
+            for (let k = 0; k < 10; k++)makeBox(x - .55 + k * .12, .75 + (k % 3) * .55, z - .42, .08, .36, .12, new THREE.MeshStandardMaterial({ color: colors[k % colors.length], roughness: .6 }), false);
+        }
+        function addFloorLamp(x, z) {
+            const metal = new THREE.MeshStandardMaterial({ color: 0x6f552c, roughness: .45, metalness: .35 });
+            makeBox(x, .8, z, .08, 1.45, .08, metal, false);
+            const shade = new THREE.Mesh(new THREE.ConeGeometry(.42, .52, 18), new THREE.MeshBasicMaterial({ color: 0xffd49a, transparent: true, opacity: .65 }));
+            shade.position.set(x, 1.55, z); scene.add(shade);
+            const light = new THREE.PointLight(0xffd49a, .75, 5); light.position.set(x, 1.5, z); scene.add(light);
+        }
+        function addBed(x, y, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x34283d, roughness: .85 });
+            makeBox(x, y - .95, z, 2.3, .38, 1.25, mat);
+            makeBox(x, y - .62, z - .54, 2.3, .55, .18, new THREE.MeshStandardMaterial({ color: 0x241a2a, roughness: .85 }));
+            makeBox(x - .55, y - .48, z, .55, .12, .9, new THREE.MeshStandardMaterial({ color: 0xd8d0bd, roughness: .7 }));
+            makeBox(x + .42, y - .45, z, .95, .10, 1.0, new THREE.MeshStandardMaterial({ color: 0x6b2738, roughness: .8 }));
+        }
+        function addDesk(x, y, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x5b3a24, roughness: .75 });
+            makeBox(x, y - .82, z, 1.6, .18, .8, mat);
+            [-.65, .65].forEach(px => [-.28, .28].forEach(pz => makeBox(x + px, y - 1.15, z + pz, .10, .65, .10, mat)));
+            makeBox(x, y - .62, z - .18, .8, .08, .38, new THREE.MeshBasicMaterial({ color: 0x8fdcff, transparent: true, opacity: .35 }), false);
+        }
+        function addPottedPlant(x, z, floorY = 0) {
+            makeBox(x, floorY + .24, z, .45, .48, .45, new THREE.MeshStandardMaterial({ color: 0x4a2a1f, roughness: .82 }));
+            const green = new THREE.MeshStandardMaterial({ color: 0x1e4328, roughness: .9 });
+            for (let k = 0; k < 5; k++) {
+                const leaf = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), green);
+                leaf.position.set(x + (k - 2) * .12, floorY + .58 + Math.sin(k) * .08, z + (k % 2 - .5) * .18);
+                leaf.castShadow = leaf.receiveShadow = true;
+                scene.add(leaf);
+            }
+        }
+
+
+        function addMarketDetails() {
+            const clothColors = [0x7a2736, 0x2d4d5c, 0x6f552c, 0x3f4d7a];
+            const spots = [[-7, -42], [7, -35], [-7, -3], [7, 7], [-7, 38], [7, 46], [-20, 55], [20, -55]];
+            spots.forEach((p, i) => {
+                const wood = new THREE.MeshStandardMaterial({ color: 0x4a321f, roughness: .85 });
+                const cloth = new THREE.MeshStandardMaterial({ color: clothColors[i % clothColors.length], roughness: .72 });
+                makeBox(p[0], .55, p[1], 1.7, .25, .9, wood, false);
+                makeBox(p[0], 1.18, p[1], 1.95, .16, 1.08, cloth, false);
+                makeBox(p[0] - .75, .92, p[1] - .35, .06, .75, .06, wood, false);
+                makeBox(p[0] + .75, .92, p[1] - .35, .06, .75, .06, wood, false);
+                blockers.push({ x: p[0], z: p[1], w: 2.0, d: 1.2, jumpable: true });
+            });
+        }
+
+
+        function addAttachedFacadeDetails() {
+            // Extra density without closing alleys: shallow bay windows, awnings, signs, and wall plants.
+            const mats = [
+                new THREE.MeshStandardMaterial({ color: 0x2d4d5c, roughness: .72 }),
+                new THREE.MeshStandardMaterial({ color: 0x7a2736, roughness: .72 }),
+                new THREE.MeshStandardMaterial({ color: 0x6f552c, roughness: .72 })
+            ];
+            const details = [
+                [-11, -62, 0], [11, -58, 1], [-11, -34, 2], [11, -28, 0],
+                [-11, -2, 1], [11, 6, 2], [-11, 30, 0], [11, 36, 1],
+                [-11, 56, 2], [11, 62, 0]
+            ];
+            details.forEach((p, i) => {
+                makeBox(p[0], 2.15, p[1], 2.6, .22, .48, mats[p[2]], false);
+                makeBox(p[0], 3.45, p[1], 1.7, 1.15, .22, new THREE.MeshBasicMaterial({ color: i % 2 ? 0x8fdcff : 0xffcf88, transparent: true, opacity: .30 }), false);
+                const sign = textSprite(i % 2 ? "ANTIQUES" : "CAFE", "#ffd166");
+                sign.position.set(p[0], 2.75, p[1]);
+                sign.scale.set(1.55, .36, 1);
+                scene.add(sign);
+            });
+        }
+
+
+        function addFlowerBeds() {
+            const colors = [0xff7ab6, 0xffd166, 0x9dffb0, 0xb8a7ff, 0xff9f7a];
+            const centers = [[-30, 14], [-24, 18], [24, -31], [30, -36], [-8, 64], [8, 64], [-40, -20], [40, 20], [-40, 45], [40, -45]];
+            centers.forEach((c, idx) => {
+                for (let i = 0; i < 16; i++) {
+                    const x = c[0] + (Math.random() - .5) * 4.2;
+                    const z = c[1] + (Math.random() - .5) * 3.0;
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .28, 6), new THREE.MeshBasicMaterial({ color: 0x315f37 }));
+                    stem.position.set(x, .18, z); scene.add(stem);
+                    const petal = new THREE.Mesh(new THREE.SphereGeometry(.055, 8, 6), new THREE.MeshBasicMaterial({ color: colors[(idx + i) % colors.length] }));
+                    petal.position.set(x, .34, z); scene.add(petal);
+                }
+            });
+        }
+
+        function loadExternalArchitecture() {
+            // Sponza is skipped in the local-assets version because the public sample URL is no longer reliable.
+            // The city still uses generated buildings and Littlest Tokyo for external architecture.
+
+// Littlest Tokyo external city asset as decorative dense building clusters.
+            loader.load(MODELS.tokyo, g => {
+                const base = g.scene;
+                normalize(base, 9);
+                base.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+                const places = [
+                    [-28, -58, .80, .25], [28, -50, .70, -.35], [-28, 38, .72, .75], [28, 48, .76, -.8],
+                    [-7, -70, .50, Math.PI], [7, 69, .48, 0], [-34, 5, .55, Math.PI / 2], [34, -8, .55, -Math.PI / 2], [-22, -28, .38, .2], [22, 16, .38, -.2], [-24, 62, .34, .8], [24, -64, .34, -.8]
+                ];
+                places.filter(p => clearNearHouseBody(p[0], p[1], 8.5 * p[2], 8.5 * p[2])).forEach(p => {
+                    const m = base.clone(true);
+                    m.position.set(p[0], 0, p[1]);
+                    m.scale.multiplyScalar(p[2]);
+                    m.rotation.y = p[3];
+                    scene.add(m);
+                    blockers.push({ x: p[0], z: p[1], w: 8.5 * p[2], d: 8.5 * p[2] });
+                });
+            }, undefined, () => { });
+        }
+
+        function registerChestSpots(x, z, w, d, front) {
+            const offsets = [-.34, 0, .34];
+            const centerDist = Math.hypot(x, z);
+            const addSpot = (sx, sz) => {
+                if (Math.abs(sx) < WORLD.x - 3 && Math.abs(sz) < WORLD.z - 4) buildingChestSpots.push([sx, sz]);
+            };
+            const addInwardSideSpot = (sx, sz) => {
+                const candDist = Math.hypot(sx, sz);
+                if (candDist <= centerDist + .15 && Math.abs(sx) < WORLD.x - 4.5 && Math.abs(sz) < WORLD.z - 5.5) buildingChestSpots.push([sx, sz]);
+            };
+            offsets.forEach(off => {
+                if (front === "east") addSpot(x + w / 2 + 1.8, z + off * d);
+                else if (front === "west") addSpot(x - w / 2 - 1.8, z + off * d);
+                else if (front === "north") addSpot(x + off * w, z - d / 2 - 1.8);
+                else if (front === "south") addSpot(x + off * w, z + d / 2 + 1.8);
+            });
+            // side façades: only the sides that still point inward toward the playable city.
+            [-.28, .28].forEach(off => {
+                addInwardSideSpot(x - w / 2 - 1.55, z + off * d);
+                addInwardSideSpot(x + w / 2 + 1.55, z + off * d);
+                addInwardSideSpot(x + off * w, z - d / 2 - 1.55);
+                addInwardSideSpot(x + off * w, z + d / 2 + 1.55);
+            });
+        }
+
+        function addEuropeanBuilding(x, z, w, h, d, type, front, i) {
+            let wall = new THREE.MeshStandardMaterial({ color: 0x2d2f39, roughness: .86 });
+            if (type === "brick") wall = new THREE.MeshStandardMaterial({ color: 0x2b1720, roughness: .92 });
+            if (type === "stone") wall = new THREE.MeshStandardMaterial({ color: 0x30323b, roughness: .86 });
+            if (type === "cream") wall = new THREE.MeshStandardMaterial({ color: 0x4a3e48, roughness: .84 });
+            if (type === "tower") wall = new THREE.MeshStandardMaterial({ color: 0x111a2a, roughness: .78 });
+            if (type === "shop") wall = new THREE.MeshStandardMaterial({ color: 0x272330, roughness: .82 });
+
+            makeBox(x, h / 2, z, w, h, d, wall);
+            blockers.push({ x, z, w: w + .35, d: d + .35 });
+            registerChestSpots(x, z, w, d, front);
+
+            const roofMat = (i % 2) ? new THREE.MeshStandardMaterial({ color: 0x4a1717, roughness: .84 }) : new THREE.MeshStandardMaterial({ color: 0x14213b, roughness: .84 });
+            addGableRoof(x, h + .05, z, w + .7, d + .7, 1.7, roofMat, front === "east" || front === "west");
+
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x24324d, roughness: .72 });
+            const stoneTrim = new THREE.MeshStandardMaterial({ color: 0x55515d, roughness: .76 });
+            const brass = new THREE.MeshStandardMaterial({ color: 0x9b7c3d, roughness: .45, metalness: .35 });
+            const flowerBox = new THREE.MeshStandardMaterial({ color: 0x312016, roughness: .88 });
+            const flowerColors = [0xff7ab6, 0xffd166, 0x9dffb0, 0xb8a7ff];
+
+            const windowOn = new THREE.MeshBasicMaterial({ color: (i % 3 === 0) ? 0x8fdcff : 0xffcf88, transparent: true, opacity: (i % 3 === 0) ? .30 : .48 });
+            const windowOff = new THREE.MeshBasicMaterial({ color: 0x070910, transparent: true, opacity: .50 });
+            const isXFace = front === "east" || front === "west";
+            const sx = front === "east" ? x + w / 2 + .045 : front === "west" ? x - w / 2 - .045 : x;
+            const sz = front === "south" ? z + d / 2 + .045 : front === "north" ? z - d / 2 - .045 : z;
+            const faceSpan = isXFace ? d : w;
+
+            if (isXFace) {
+                makeBox(sx, h / 2, z - faceSpan / 2 + .28, .14, h, .18, stoneTrim, false);
+                makeBox(sx, h / 2, z + faceSpan / 2 - .28, .14, h, .18, stoneTrim, false);
+            } else {
+                makeBox(x - faceSpan / 2 + .28, h / 2, sz, .18, h, .14, stoneTrim, false);
+                makeBox(x + faceSpan / 2 - .28, h / 2, sz, .18, h, .14, stoneTrim, false);
+            }
+
+            for (let yy = 2.1; yy < h - 1; yy += 2.35) {
+                for (let k = -2; k <= 2; k++) {
+                    const on = ((k + Math.floor(yy) + i) % 3) !== 0;
+                    const mat = on ? windowOn : windowOff;
+                    const local = k * (faceSpan / 5.2);
+                    if (isXFace) {
+                        makeBox(sx, yy, z + local, .07, .88, .62, mat, false);
+                        makeBox(sx, yy + .52, z + local, .09, .10, .85, stoneTrim, false);
+                        makeBox(sx, yy - .52, z + local, .09, .10, .85, stoneTrim, false);
+                        makeBox(sx, yy, z + local - .43, .09, 1.08, .08, trimMat, false);
+                        makeBox(sx, yy, z + local + .43, .09, 1.08, .08, trimMat, false);
+                        if (yy > 3.5 && yy < h - 2.0 && k % 2 === 0) addBalcony(sx, z + local, yy - .78, isXFace, front, brass);
+                        if (k % 2 === 0) addFlowerBox(sx, z + local, yy - .68, isXFace, front, flowerBox, flowerColors[(i + k + 10) % flowerColors.length]);
+                    } else {
+                        makeBox(x + local, yy, sz, .62, .88, .07, mat, false);
+                        makeBox(x + local, yy + .52, sz, .85, .10, .09, stoneTrim, false);
+                        makeBox(x + local, yy - .52, sz, .85, .10, .09, stoneTrim, false);
+                        makeBox(x + local - .43, yy, sz, .08, 1.08, .09, trimMat, false);
+                        makeBox(x + local + .43, yy, sz, .08, 1.08, .09, trimMat, false);
+                        if (yy > 3.5 && yy < h - 2.0 && k % 2 === 0) addBalcony(x + local, sz, yy - .78, isXFace, front, brass);
+                        if (k % 2 === 0) addFlowerBox(x + local, sz, yy - .68, isXFace, front, flowerBox, flowerColors[(i + k + 10) % flowerColors.length]);
+                    }
+                }
+            }
+
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x160f10, roughness: .7 });
+            if (isXFace) {
+                makeBox(sx, 1.1, z, .09, 1.7, 1.1, doorMat, false);
+                makeBox(sx, 2.05, z, .16, .28, 2.35, trimMat, false);
+                makeBox(sx, 2.35, z, .24, .20, 2.0, brass, false);
+            } else {
+                makeBox(x, 1.1, sz, 1.1, 1.7, .09, doorMat, false);
+                makeBox(x, 2.05, sz, 2.35, .28, .16, trimMat, false);
+                makeBox(x, 2.35, sz, 2.0, .20, .24, brass, false);
+            }
+            for (let yy = 3.4; yy < h - 1; yy += 3.8) {
+                if (isXFace) makeBox(sx, yy, z, .09, .12, d * .88, trimMat, false);
+                else makeBox(x, yy, sz, w * .88, .12, .09, trimMat, false);
+            }
+            makeBox(x, h - .25, z, w * .92, .20, d * .92, stoneTrim, false);
+
+            if (type === "shop") {
+                const s = textSprite(i % 2 ? "BAKERY" : "BOOKS", "#ffd166");
+                s.position.set(isXFace ? sx : x, 2.95, isXFace ? z : sz);
+                s.scale.set(1.8, .46, 1);
+                if (isXFace) s.rotation.y = front === "east" ? Math.PI / 2 : -Math.PI / 2;
+                scene.add(s);
+            }
+        }
+        function addBalcony(a, b, y, isXFace, front, mat) {
+            if (isXFace) {
+                const dir = front === "east" ? 1 : -1;
+                makeBox(a + dir * .18, y, b, .36, .08, 1.05, mat, false);
+                for (let i = -2; i <= 2; i++)makeBox(a + dir * .34, y + .25, b + i * .22, .06, .50, .035, mat, false);
+            } else {
+                const dir = front === "south" ? 1 : -1;
+                makeBox(a, y, b + dir * .18, 1.05, .08, .36, mat, false);
+                for (let i = -2; i <= 2; i++)makeBox(a + i * .22, y + .25, b + dir * .34, .035, .50, .06, mat, false);
+            }
+        }
+        function addFlowerBox(a, b, y, isXFace, front, boxMat, color) {
+            const flowerMat = new THREE.MeshBasicMaterial({ color });
+            if (isXFace) {
+                const dir = front === "east" ? 1 : -1;
+                makeBox(a + dir * .16, y, b, .24, .16, .65, boxMat, false);
+                for (let i = -1; i <= 1; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), flowerMat); f.position.set(a + dir * .30, y + .15, b + i * .20); scene.add(f); }
+            } else {
+                const dir = front === "south" ? 1 : -1;
+                makeBox(a, y, b + dir * .16, .65, .16, .24, boxMat, false);
+                for (let i = -1; i <= 1; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), flowerMat); f.position.set(a + i * .20, y + .15, b + dir * .30); scene.add(f); }
+            }
+        }
+        function addGableRoof(x, y, z, w, d, h, mat, axisX) {
+            const shape = new THREE.Shape();
+            shape.moveTo(-w / 2, 0); shape.lineTo(w / 2, 0); shape.lineTo(0, h); shape.lineTo(-w / 2, 0);
+            const geo = new THREE.ExtrudeGeometry(shape, { depth: d, bevelEnabled: false });
+            geo.translate(0, 0, -d / 2);
+            const roof = new THREE.Mesh(geo, mat);
+            roof.position.set(x, y, z); if (axisX) roof.rotation.y = Math.PI / 2;
+            roof.castShadow = true; roof.receiveShadow = true; scene.add(roof);
+        }
+        function addArch(x, z) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2a2432, roughness: .75 });
+            makeBox(x, 2.5, z, 2.2, 5.0, .7, mat); makeBox(x, 5.0, z, 4.0, .55, .75, mat);
+            makeBox(x - 1.9, 1.3, z, .55, 2.6, .75, mat); makeBox(x + 1.9, 1.3, z, .55, 2.6, .75, mat);
+            blockers.push({ x, z, w: 4.7, d: 1.2 });
+        }
+        function addStreetLight(x, z, i) {
+            const pole = new THREE.MeshStandardMaterial({ color: 0x202a3d, roughness: .76 });
+            const l = new THREE.PointLight(0xffd49a, 1.55, 12); l.position.set(x, 4.5, z); scene.add(l);
+            makeBox(x, 2.15, z, .22, 4.3, .22, pole);
+            const lamp = new THREE.Mesh(new THREE.SphereGeometry(.25, 16, 8), new THREE.MeshBasicMaterial({ color: 0xffd49a }));
+            lamp.position.set(x, 4.45, z); scene.add(lamp);
+        }
+        function addPark(cx, cz, mirror = false) {
+            const hedgeMat = new THREE.MeshStandardMaterial({ color: 0x14351e, roughness: .94 });
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2b303a, roughness: .85 });
+            makeBox(cx, .28, cz, 8.8, .55, .45, hedgeMat); blockers.push({ x: cx, z: cz, w: 9.4, d: .8, jumpable: true });
+            makeBox(cx, .28, cz + 5.2, 8.8, .55, .45, hedgeMat); blockers.push({ x: cx, z: cz + 5.2, w: 9.4, d: .8, jumpable: true });
+            makeBox(cx - 4.4, .28, cz + 2.6, .45, .55, 5.2, hedgeMat); blockers.push({ x: cx - 4.4, z: cz + 2.6, w: .8, d: 5.8, jumpable: true });
+            makeBox(cx + 4.4, .28, cz + 2.6, .45, .55, 5.2, hedgeMat); blockers.push({ x: cx + 4.4, z: cz + 2.6, w: .8, d: 5.8, jumpable: true });
+            const fountain = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.25, .35, 32), stoneMat);
+            fountain.position.set(cx, .24, cz + 2.6); fountain.castShadow = fountain.receiveShadow = true; scene.add(fountain);
+            const water = new THREE.Mesh(new THREE.CylinderGeometry(.86, .86, .08, 32), new THREE.MeshBasicMaterial({ color: 0x6dcfff, transparent: true, opacity: .45 }));
+            water.position.set(cx, .48, cz + 2.6); scene.add(water);
+            const jet = new THREE.PointLight(0x8fdcff, .55, 4); jet.position.set(cx, 1.1, cz + 2.6); scene.add(jet);
+        }
+        function loadTreeModel(positions) {
+            loader.load(MODELS.tree, g => {
+                const base = g.scene; normalize(base, 2.4); base.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+                positions.forEach((p, i) => { const t = base.clone(true); t.position.set(p[0], 0, p[1]); t.rotation.y = (i * .7) % 6.28; t.scale.multiplyScalar(.85 + (i % 4) * .12); scene.add(t); blockers.push({ x: p[0], z: p[1], r: .74 }); });
+            }, undefined, () => positions.forEach((p, i) => addTreeFallback(p[0], p[1], i)));
+        }
+        function addTreeFallback(x, z, i) {
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.18, .26, 1.6, 10), new THREE.MeshStandardMaterial({ color: 0x3a2718, roughness: .86 }));
+            trunk.position.set(x, .8, z); trunk.castShadow = true; trunk.receiveShadow = true; scene.add(trunk);
+            const colors = [0x17351f, 0x1e4328, 0x253f25];
+            for (let k = 0; k < 4; k++) { const crown = new THREE.Mesh(new THREE.SphereGeometry(.75 - k * .05, 14, 10), new THREE.MeshStandardMaterial({ color: colors[(i + k) % colors.length], roughness: .9 })); crown.position.set(x + (k - 1.5) * .22, 1.65 + k * .28, z + (k % 2 ? -.18 : .16)); crown.castShadow = true; scene.add(crown); }
+            blockers.push({ x, z, r: .72 });
+        }
+
+        function addForestTree(x, z, i) {
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2d1d12, roughness: .88 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: i % 2 ? 0x163320 : 0x1b4028, roughness: .92 });
+            const g = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.26, .40, 4.6, 10), trunkMat);
+            trunk.position.y = 2.1; trunk.castShadow = trunk.receiveShadow = true; g.add(trunk);
+            [0, 1, 2].forEach(k => {
+                const cone = new THREE.Mesh(new THREE.ConeGeometry(1.9 - k * .25, 3.0, 12), leafMat);
+                cone.position.y = 3.0 + k * 1.2;
+                cone.castShadow = cone.receiveShadow = true;
+                g.add(cone);
+            });
+            g.position.set(x, 0, z);
+            scene.add(g);
+            blockers.push({ x, z, r: 1.45 });
+        }
+        function addForestWall() {
+            const pts = [];
+            for (let z = -75; z <= 75; z += 4) { pts.push([-47.5, z], [-44.3, z], [47.5, z], [44.3, z]); }
+            for (let x = -44; x <= 44; x += 4) { pts.push([x, -75.5], [x, -71.8], [x, 75.5], [x, 71.8]); }
+            pts.forEach((p, i) => { if (insideWorld(p[0], p[1], 0.2)) addForestTree(p[0], p[1], i); });
+        }
+
+        function addPlanter(x, z, i) {
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2b2530, roughness: .8 });
+            const edge = new THREE.MeshStandardMaterial({ color: 0x6f552c, roughness: .55, metalness: .25 });
+            makeBox(x, .32, z, 2.35, .65, .86, mat);
+            makeBox(x, .70, z, 2.50, .10, .98, edge, false);
+            for (let k = -2; k <= 2; k++) {
+                const shrub = new THREE.Mesh(new THREE.SphereGeometry(.34, 12, 8), new THREE.MeshStandardMaterial({ color: k % 2 ? 0x18371f : 0x244d2c, roughness: .92 }));
+                shrub.position.set(x + k * .34, .86, z + ((i + k) % 2) * .12);
+                shrub.castShadow = true; scene.add(shrub);
+            }
+            blockers.push({ x, z, w: 2.8, d: 1.2, jumpable: true });
+        }
+        function addCypress(x, z, i) {
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.16, .22, 1.2, 10), new THREE.MeshStandardMaterial({ color: 0x352417, roughness: .86 }));
+            trunk.position.set(x, .6, z); trunk.castShadow = true; scene.add(trunk);
+            const green = new THREE.MeshStandardMaterial({ color: i % 2 ? 0x12351f : 0x173d25, roughness: .9 });
+            for (let k = 0; k < 3; k++) {
+                const cone = new THREE.Mesh(new THREE.ConeGeometry(.72 - k * .14, 1.55 - k * .18, 14), green);
+                cone.position.set(x, 1.35 + k * .62, z);
+                cone.castShadow = true; scene.add(cone);
+            }
+            blockers.push({ x, z, r: .58 });
+        }
+        function sponza() { }
+        function exitBuild() { makeBox(0, 1.7, -70, 9, 3.4, .25, new THREE.MeshStandardMaterial({ color: 0x0e1728, roughness: .6 }), false); const sign = textSprite("RETURN", "#7cffb2"); sign.position.set(0, 4, -69.8); sign.scale.set(3.2, .9, 1); scene.add(sign); exitLight = new THREE.PointLight(0x7cffb2, 1.35, 10); exitLight.position.set(0, 2, -66); scene.add(exitLight); }
+        function spawnBoxes() {
+            const baseSpots = buildingChestSpots.length ? buildingChestSpots : [
+                [-3, -66], [9, -61], [-18, -50], [19, -46], [-5, -38], [27, -36], [-28, -23], [8, -22], [-15, -7], [22, -4], [-29, 10], [-7, 19], [17, 24], [-24, 35], [6, 40], [29, 51], [-14, 58], [14, 63]
+            ];
+            const shuffled = shuffle([...baseSpots]);
+            const chosen = [];
+            const minSpacing = 3.6;
+            const targetCount = 44;
+            for (const p of shuffled) {
+                if (chosen.every(q => Math.hypot(q[0] - p[0], q[1] - p[1]) > minSpacing)) chosen.push([p[0], p[1], p[2] || 1, p[3] ?? .10]);
+                if (chosen.length >= targetCount) break;
+            }
+            let guard = 0;
+            while (chosen.length < targetCount && guard < 4000) {
+                guard++;
+                const x = (Math.random() * 2 - 1) * (WORLD.x - 8);
+                const z = (Math.random() * 2 - 1) * (WORLD.z - 10);
+                const y = Math.random() < .24 ? 5.08 : 1;
+                if (!insideWorld(x, z, 4)) continue;
+                if (chosen.every(q => Math.hypot(q[0] - x, q[1] - z) > minSpacing)) chosen.push([x, z, y, .10]);
+            }
+            chosen.forEach(p => addSearchBox(p[0], p[1], p[2] || 1, p[3] ?? .10));
+        }
+        function addSearchBox(x, z, y = 1, itemChance = .10) {
+            const obj = {
+                kind: "box",
+                name: "古い宝箱",
+                pos: new THREE.Vector3(x, y, z),
+                searched: false,
+                mesh: null,
+                light: null,
+                itemChance
+            };
+            boxes.push(obj);
+            if (y < 3) blockers.push({ x, z, r: .95 });
+            obj.mesh = createTreasureChest(x, z, y < 3 ? 0.12 : (y - .80));
+        }
+        function createTreasureChest(x, z, y = .12) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z);
+
+            const wood = new THREE.MeshStandardMaterial({ color: 0x3b2415, roughness: .92, metalness: 0 });
+            const darkWood = new THREE.MeshStandardMaterial({ color: 0x1f130b, roughness: .96 });
+            const metal = new THREE.MeshStandardMaterial({ color: 0x6f552c, roughness: .55, metalness: .45 });
+            const gold = new THREE.MeshStandardMaterial({ color: 0xc69a3a, roughness: .34, metalness: .62 });
+            const glow = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: .18 });
+
+            const base = new THREE.Mesh(new THREE.BoxGeometry(1.55, .72, 1.12), wood);
+            base.position.y = .16; base.castShadow = base.receiveShadow = true; group.add(base);
+
+            const lid = new THREE.Mesh(new THREE.CylinderGeometry(.56, .56, 1.58, 24, 1, false, 0, Math.PI), wood);
+            lid.rotation.z = Math.PI / 2; lid.rotation.y = Math.PI / 2; lid.position.y = .60;
+            lid.castShadow = lid.receiveShadow = true; group.add(lid); group.userData.lid = lid;
+
+            [[0, .16, .59, 1.62, .72, .08], [0, .16, -.59, 1.62, .72, .08]].forEach(s => {
+                const m = new THREE.Mesh(new THREE.BoxGeometry(s[3], s[4], s[5]), darkWood);
+                m.position.set(s[0], s[1], s[2]); m.castShadow = m.receiveShadow = true; group.add(m);
+            });
+
+            [-.55, 0, .55].forEach(xp => {
+                const band = new THREE.Mesh(new THREE.BoxGeometry(.08, 1.04, 1.22), metal);
+                band.position.set(xp, .35, 0); band.castShadow = band.receiveShadow = true; group.add(band);
+                [-.46, .46].forEach(zp => {
+                    const rivet = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 6), gold);
+                    rivet.position.set(xp, .62, zp); group.add(rivet);
+                });
+            });
+
+            const lock = new THREE.Mesh(new THREE.BoxGeometry(.30, .34, .12), gold);
+            lock.position.set(0, .32, .65); lock.castShadow = true; group.add(lock);
+            const keyhole = new THREE.Mesh(new THREE.BoxGeometry(.055, .16, .03), darkWood);
+            keyhole.position.set(0, .32, .72); group.add(keyhole);
+
+            const aura = new THREE.Mesh(new THREE.CircleGeometry(1.05, 32), glow);
+            aura.rotation.x = -Math.PI / 2; aura.position.y = .02; group.add(aura); group.userData.aura = aura;
+            const flag = textSprite("OPEN", "#9dffb0"); flag.position.set(0, 1.65, 0); flag.scale.set(1.15, .32, 1); flag.visible = false; group.add(flag); group.userData.flag = flag;
+
+            group.rotation.y = Math.random() * Math.PI * 2;
+            group.scale.setScalar(.6);
+            scene.add(group);
+            return group;
+        }
+        function openTreasureChest(group, hasTreasure = false) {
+            if (group.userData.opened) return;
+            group.userData.opened = true;
+            const lid = group.userData.lid;
+            const aura = group.userData.aura;
+            const flag = group.userData.flag;
+            if (lid) {
+                if (hasTreasure) lid.visible = false;
+                else { lid.rotation.x = -Math.PI * .45; lid.position.y = .92; lid.position.z = -.18; }
+            }
+            if (aura) { aura.material.opacity = hasTreasure ? .10 : .045; }
+            if (flag) { flag.visible = true; }
+        }
+        function spawnItem(item, pos) {
+            const obj = {
+                kind: "pickup",
+                ...item,
+                pos: pos.clone().add(new THREE.Vector3(0, .92, 0)),
+                taken: false,
+                mesh: null,
+                light: null
+            };
+            pickups.push(obj);
+            loader.load(item.url, g => {
+                const m = g.scene;
+                normalize(m, item.fit);
+                m.position.copy(obj.pos);
+                m.traverse(c => {
+                    if (c.isMesh) {
+                        c.castShadow = false;
+                        c.receiveShadow = false;
+                    }
+                });
+                scene.add(m);
+                obj.mesh = m
+            }, undefined, () => {
+                const f = fallback();
+                f.position.copy(obj.pos);
+                scene.add(f);
+                obj.mesh = f
+            });
+        }
+        function disposeObj(obj) { obj.traverse?.(o => { if (o.geometry) o.geometry.dispose?.(); if (o.material) { if (Array.isArray(o.material)) o.material.forEach(m => m.dispose?.()); else o.material.dispose?.(); } }); }
+        function normalize(model, target) { const b = new THREE.Box3().setFromObject(model), s = new THREE.Vector3(), c = new THREE.Vector3(); b.getSize(s); b.getCenter(c); const sc = target / (Math.max(s.x, s.y, s.z) || 1); model.scale.setScalar(sc); model.position.sub(c.multiplyScalar(sc)); }
+        function fallback() { const g = new THREE.Group(), m = new THREE.Mesh(new THREE.TorusKnotGeometry(.42, .14, 80, 12), new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: .35, metalness: .2 })); m.castShadow = true; g.add(m); return g; }
+        function textSprite(t, color) { const c = document.createElement("canvas"); c.width = 512; c.height = 160; const x = c.getContext("2d"); x.font = "900 58px system-ui"; x.textAlign = "center"; x.textBaseline = "middle"; x.shadowColor = color; x.shadowBlur = 18; x.fillStyle = color; x.fillText(t, 256, 80); return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true })); }
+        function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]] } return a; }
+        
+        function setupCatalogPreview() {
+            if (catalogRenderer) return;
+            catalogRenderer = new THREE.WebGLRenderer({ canvas: ui.catalogCanvas, alpha: true, antialias: true });
+            catalogRenderer.setSize(320, 250, false);
+            catalogRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            catalogScene = new THREE.Scene();
+            catalogCamera = new THREE.PerspectiveCamera(35, 320 / 250, .1, 40);
+            catalogCamera.position.set(0, 0.15, 5.8);
+            catalogCamera.lookAt(0, 0, 0);
+            catalogScene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.55));
+            const key = new THREE.DirectionalLight(0xffe8c0, 1.25);
+            key.position.set(3, 4, 5);
+            catalogScene.add(key);
+            const fill = new THREE.DirectionalLight(0xbfd8ff, .55);
+            fill.position.set(-2, 1.5, 3);
+            catalogScene.add(fill);
+        }
+
+        function clearCatalogPreview() {
+            catalogPreviewRequestId++;
+            if (catalogScene) {
+                const extras = [];
+                catalogScene.traverse(obj => {
+                    if (obj !== catalogScene && obj.parent === catalogScene && obj.userData && obj.userData.catalogPreviewModel) extras.push(obj);
+                });
+                extras.forEach(obj => { catalogScene.remove(obj); disposeObj(obj); });
+            }
+            if (catalogModel && catalogScene) { catalogScene.remove(catalogModel); disposeObj(catalogModel); }
+            catalogModel = null;
+            if (catalogRenderer && catalogScene && catalogCamera) catalogRenderer.render(catalogScene, catalogCamera);
+        }
+
+        function setCatalogPreview(item) {
+            if (!item || !ui.catalogCanvas) return;
+            setupCatalogPreview();
+            ui.catalogPreviewName.textContent = `${item.name} ×${Math.max(1, getCatalogCount(item.id))}`;
+            clearCatalogPreview();
+            const requestId = catalogPreviewRequestId;
+
+            loader.load(item.url, g => {
+                if (requestId !== catalogPreviewRequestId) { disposeObj(g.scene); return; }
+
+                const root = new THREE.Group();
+                root.userData.catalogPreviewModel = true;
+                const spin = new THREE.Group();
+                const content = new THREE.Group();
+                root.add(spin);
+                spin.add(content);
+
+                const model = g.scene;
+                model.traverse(c => { if (c.isMesh) { c.castShadow = false; c.receiveShadow = false; } });
+                content.add(model);
+                normalize(content, (item.fit || 1.15) * 1.7);
+
+                const box = new THREE.Box3().setFromObject(content);
+                const size = box.getSize(new THREE.Vector3());
+                const sphere = new THREE.Sphere();
+                box.getBoundingSphere(sphere);
+                const radius = Math.max(sphere.radius, .75);
+                const tweak = PREVIEW_TWEAKS[item.id] || { y: 0, z: 1.0 };
+
+                // inventory の 3D view と同じ方式：
+                // normalize() 後のモデル位置をそのまま使い、必要最小限の個別補正だけ入れる
+                content.position.y += radius * (tweak.y ?? 0);
+
+                const halfFov = THREE.MathUtils.degToRad(catalogCamera.fov * .5);
+                const fitRadius = Math.max(size.x, size.y, size.z) * 0.5;
+                const dist = (fitRadius / Math.sin(halfFov)) * 1.28 * (tweak.z || 1.0);
+                catalogCamera.position.set(0, 0.04, Math.max(4.2, dist));
+                catalogCamera.lookAt(0, 0, 0);
+
+                catalogScene.add(root);
+                catalogModel = spin;
+            }, undefined, () => {
+                if (requestId !== catalogPreviewRequestId) return;
+                const root = new THREE.Group();
+                root.userData.catalogPreviewModel = true;
+                const spin = new THREE.Group();
+                const content = new THREE.Group();
+                root.add(spin);
+                spin.add(content);
+                const fallbackModel = fallback();
+                content.add(fallbackModel);
+                fallbackModel.position.set(0, 0, 0);
+                catalogScene.add(root);
+                catalogCamera.position.set(0, 0.04, 5.2);
+                catalogCamera.lookAt(0, 0, 0);
+                catalogModel = spin;
+            });
+        }
+
+        function updateCatalogPreview(dt) {
+            if (!catalogRenderer || !catalogScene || !catalogCamera || !ui.catalogModal || ui.catalogModal.style.display !== "flex") return;
+            if (catalogModel) catalogModel.rotation.y += dt * .8;
+            catalogRenderer.render(catalogScene, catalogCamera);
+        }
+
+        
+        function normalizeDiscoveredCounts(raw) {
+            const result = {};
+            if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+                for (const [id, value] of Object.entries(raw)) {
+                    const n = Math.max(0, Math.floor(Number(value) || 0));
+                    if (n > 0) result[id] = n;
+                }
+            }
+            return result;
+        }
+
+        function loadDiscovered() {
+            try {
+                const arr = JSON.parse(localStorage.getItem(DISCOVERY_KEY) || "[]");
+                discovered = new Set(Array.isArray(arr) ? arr : []);
+            } catch (e) {
+                discovered = new Set();
+            }
+
+            try {
+                const rawCounts = JSON.parse(localStorage.getItem(DISCOVERY_COUNT_KEY) || "{}");
+                discoveredCounts = normalizeDiscoveredCounts(rawCounts);
+            } catch (e) {
+                discoveredCounts = {};
+            }
+
+            // 旧バージョンの「発見済みリスト」だけが残っている場合でも、最低1個として引き継ぐ
+            for (const id of discovered) {
+                if (!discoveredCounts[id]) discoveredCounts[id] = 1;
+            }
+            for (const id of Object.keys(discoveredCounts)) discovered.add(id);
+        }
+
+        function saveDiscovered() {
+            try {
+                localStorage.setItem(DISCOVERY_KEY, JSON.stringify([...discovered]));
+                localStorage.setItem(DISCOVERY_COUNT_KEY, JSON.stringify(discoveredCounts));
+            } catch (e) {}
+        }
+
+        function getRunCount(id) {
+            if (expeditionEnded) return 0;
+            return expeditionItems.filter(item => item.id === id).length;
+        }
+
+        function getCatalogCount(id) {
+            return (discoveredCounts[id] || (discovered.has(id) ? 1 : 0)) + getRunCount(id);
+        }
+
+        function getTotalSavedCount() {
+            return Object.values(discoveredCounts).reduce((sum, n) => sum + (Number(n) || 0), 0);
+        }
+
+        function formatTime(sec) {
+            sec = Math.max(0, Math.ceil(sec));
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        function updateExpeditionHUD() {
+            if (ui.timer) ui.timer.textContent = formatTime(expeditionTime);
+            if (ui.count) ui.count.textContent = `${expeditionItems.length}`;
+            if (ui.newFind) ui.newFind.textContent = `${expeditionItems.filter(x => x.isNew).length}`;
+            if (ui.status) ui.status.textContent = `図鑑 ${new Set([...discovered, ...expeditionFound]).size} / ${FOUND.length}`;
+        }
+
+        function resetExpedition() {
+            expeditionTime = EXPEDITION_TIME;
+            expeditionEnded = false;
+            expeditionItems = [];
+            expeditionFound = new Set();
+            inventory = [];
+            collected.clear();
+            nearest = null;
+            nearestLadder = null;
+            gateConfirm = false;
+            updateExpeditionHUD();
+        }
+
+        function endExpedition(reason = "time") {
+            if (expeditionEnded) return;
+            expeditionEnded = true;
+            if (reason === "return") {
+                for (const item of expeditionItems) {
+                    discovered.add(item.id);
+                    discoveredCounts[item.id] = (discoveredCounts[item.id] || 0) + 1;
+                }
+                saveDiscovered();
+            }
+            updateExpeditionHUD();
+            document.exitPointerLock?.();
+            showExpeditionResult(reason);
+        }
+
+        function showExpeditionResult(reason) {
+            if (!ui.expeditionResult) return;
+            const isGameOver = reason === "time";
+            const newItems = expeditionItems.filter(x => x.isNew);
+            const uniqueThisRun = new Set(expeditionItems.map(x => x.id)).size;
+
+            const title = document.getElementById("expeditionTitle");
+            const sub = document.getElementById("expeditionSub");
+            if (title) title.textContent = isGameOver ? "GAME OVER" : "遠征成功";
+            if (sub) sub.textContent = isGameOver
+                ? "3分以内に脱出できなかったため、今回の新発見は図鑑に保存されません。"
+                : "RETURNゲートから無事に帰還しました。今回の新発見が図鑑に保存されました。";
+
+            ui.expeditionStats.innerHTML = `
+                <div class="resultStat"><span>今回の回収数</span><b>${expeditionItems.length}</b></div>
+                <div class="resultStat"><span>${isGameOver ? "失われた新発見" : "保存された新発見"}</span><b>${newItems.length}</b></div>
+                <div class="resultStat"><span>今回の種類数</span><b>${uniqueThisRun}</b></div>
+                <div class="resultStat"><span>図鑑進捗</span><b>${discovered.size} / ${FOUND.length}</b></div>\n                <div class="resultStat"><span>保存済み総回収数</span><b>${getTotalSavedCount()}</b></div>
+            `;
+            if (!expeditionItems.length) {
+                ui.expeditionItems.innerHTML = `<div class="resultItem">今回は宝物を持ち帰れませんでした。</div>`;
+            } else {
+                ui.expeditionItems.innerHTML = expeditionItems.map((item, i) =>
+                    `<div class="resultItem ${item.isNew ? "new" : ""}"><b>${item.isNew ? (isGameOver ? "LOST" : "NEW") : "GET"}</b> ${item.name}</div>`
+                ).join("");
+            }
+            ui.expeditionResult.style.display = "flex";
+            buildCatalog(ui.catalogSearch?.value || "");
+        }
+
+        function buildCatalog(filter = "") {
+            const grid = ui.catalogModalGrid;
+            if (!grid) return;
+            const q = filter.trim().toLowerCase();
+            const items = FOUND
+                .map((item, i) => {
+                    const found = discovered.has(item.id) || expeditionFound.has(item.id);
+                    const count = found ? getCatalogCount(item.id) : 0;
+                    return { item, i, found, count };
+                })
+                .filter(({ item, i, found, count }) => {
+                    const visibleName = found ? item.name : "？？？";
+                    const text = `${i + 1} ${visibleName} ${found ? item.id : ""} ${count}`.toLowerCase();
+                    return !q || text.includes(q);
+                });
+
+            grid.innerHTML = items.map(({ item, i, found, count }) =>
+                `<div class="catalogItem ${found ? "discovered" : "locked"} ${found && i === catalogSelectedIndex ? "active" : ""}" data-idx="${i}" data-found="${found ? "1" : "0"}">
+                    <div class="catalogItemMain">
+                        <span><b>${String(i + 1).padStart(2, "0")}</b>${found ? item.name : "？？？"}</span>
+                        ${found ? `<em class="catalogCount">×${Math.max(1, count)}</em>` : ""}
+                    </div>
+                    <small>${found ? `回収数 ${Math.max(1, count)} / ${item.id}` : "未発見"}</small>
+                </div>`
+            ).join("");
+
+            if (!items.length) {
+                grid.innerHTML = `<div class="catalogItem">該当する宝物がありません。</div>`;
+                return;
+            }
+
+            const discoveredItems = items.filter(x => x.found);
+            if (discoveredItems.length && !(discovered.has(FOUND[catalogSelectedIndex]?.id) || expeditionFound.has(FOUND[catalogSelectedIndex]?.id))) {
+                catalogSelectedIndex = discoveredItems[0].i;
+            }
+
+            grid.querySelectorAll(".catalogItem[data-idx]").forEach(el => {
+                el.onclick = () => {
+                    const idx = Number(el.dataset.idx) || 0;
+                    if (!(discovered.has(FOUND[idx].id) || expeditionFound.has(FOUND[idx].id))) {
+                        ui.catalogPreviewName.textContent = "未発見";
+                        clearCatalogPreview();
+                        message("この宝物はまだ発見していません。", 2.0);
+                        return;
+                    }
+                    catalogSelectedIndex = idx;
+                    buildCatalog(ui.catalogSearch?.value || "");
+                    setCatalogPreview(FOUND[catalogSelectedIndex]);
+                };
+            });
+
+            if (discovered.has(FOUND[catalogSelectedIndex]?.id) || expeditionFound.has(FOUND[catalogSelectedIndex]?.id)) setCatalogPreview(FOUND[catalogSelectedIndex]);
+            else {
+                ui.catalogPreviewName.textContent = "未発見";
+                clearCatalogPreview();
+            }
+        }
+        function initUI() { loadDiscovered(); updateExpeditionHUD(); buildCatalog();
+            if (ui.catalogOpen) ui.catalogOpen.onclick = () => { ui.catalogModal.style.display = "flex"; buildCatalog(ui.catalogSearch?.value || ""); };
+            if (ui.catalogClose) ui.catalogClose.onclick = () => { ui.catalogModal.style.display = "none"; };
+            if (ui.catalogModal) ui.catalogModal.onclick = e => { if (e.target === ui.catalogModal) ui.catalogModal.style.display = "none"; };
+            if (ui.catalogSearch) ui.catalogSearch.oninput = () => buildCatalog(ui.catalogSearch.value || "");
+            if (ui.expeditionClose) ui.expeditionClose.onclick = () => { ui.expeditionResult.style.display = "none"; ui.menu.style.display = "grid"; started = false; expeditionEnded = false; };
+            ui.start.onclick = () => start(); ui.mute.onclick = () => { muted = !muted; ui.mute.textContent = muted ? "音 OFF" : "音 ON"; if (bgmAudio) bgmAudio.muted = muted };
+            ui.volumeSlider.oninput = () => { SETTINGS.bgmPercent = Number(ui.volumeSlider.value); ui.volumeValue.textContent = ui.volumeSlider.value + "%"; if (bgmAudio) bgmAudio.volume = (SETTINGS.bgmPercent / 100) * SETTINGS.maxBgmVolume; };
+            ui.sensitivitySlider.oninput = () => { SETTINGS.sensitivityPercent = Number(ui.sensitivitySlider.value); ui.sensitivityValue.textContent = ui.sensitivitySlider.value + "%"; }; document.addEventListener("keydown", e => {
+                if (e.code === "Tab") { e.preventDefault(); toggleInventory(); return; }
+                if (e.code === "KeyH") { showChestsOnMap = true; e.preventDefault(); }
+                keys.add(e.code);
+                if (e.code === "KeyF") interact();
+                if (e.code === "Space" && !e.repeat) { player.wantJump = true; e.preventDefault(); }
+            }); document.addEventListener("keyup", e => { if (e.code === "KeyH") showChestsOnMap = false; keys.delete(e.code); }); ui.inventoryClose.onclick = () => toggleInventory(false); renderer.domElement.onclick = () => { if (started && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock() }; document.addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; const sens = (SETTINGS.sensitivityPercent / 100) * SETTINGS.maxSensitivity; player.yaw -= e.movementX * sens; player.pitch -= e.movementY * sens * .91; player.pitch = Math.max(-1.25, Math.min(1.25, player.pitch)) }); addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight) }); bgmAudio = new Audio("./zanzou_no_hiyu.mp3"); bgmAudio.loop = true; bgmAudio.volume = (SETTINGS.bgmPercent / 100) * SETTINGS.maxBgmVolume; bgmAudio.muted = muted;
+        }
+        function toggleInventory(force) {
+            if (!started) return;
+            inventoryOpen = typeof force === "boolean" ? force : !inventoryOpen;
+            ui.inventoryModal.style.display = inventoryOpen ? "flex" : "none";
+            if (inventoryOpen) {
+                renderInventory();
+                document.exitPointerLock?.();
+            } else if (!cleared) {
+                renderer.domElement.requestPointerLock?.();
+            }
+        }
+        function renderInventory() {
+            if (!inventory.length) {
+                ui.inventoryItems.innerHTML = '<div class="invItem"><b>まだ何も持っていない</b><span>宝箱を開けて宝物を集めよう。</span></div>';
+                ui.inventoryPreviewName.textContent = "アイテムなし";
+                clearInventoryPreview();
+                return;
+            }
+            ui.inventoryItems.innerHTML = inventory.map((item, i) => `<div class="invItem ${i === inventoryPreviewIndex ? "active" : ""}" data-idx="${i}"><b>${item.name}</b><span>No.${String(i + 1).padStart(2, "0")} / ${item.id}</span></div>`).join("");
+            ui.inventoryItems.querySelectorAll(".invItem").forEach(el => {
+                el.onclick = () => { inventoryPreviewIndex = Number(el.dataset.idx) || 0; renderInventory(); setInventoryPreview(inventory[inventoryPreviewIndex]); };
+            });
+            inventoryPreviewIndex = Math.min(inventoryPreviewIndex, inventory.length - 1);
+            setInventoryPreview(inventory[inventoryPreviewIndex]);
+        }
+        function setupInventoryPreview() {
+            if (inventoryRenderer) return;
+            inventoryRenderer = new THREE.WebGLRenderer({ canvas: ui.inventoryCanvas, alpha: true, antialias: true });
+            inventoryRenderer.setSize(300, 220, false);
+            inventoryRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            inventoryScene = new THREE.Scene();
+            inventoryCamera = new THREE.PerspectiveCamera(35, 300 / 220, .1, 40);
+            inventoryCamera.position.set(0, 0.15, 5.8);
+            inventoryCamera.lookAt(0, 0, 0);
+            inventoryScene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.55));
+            const key = new THREE.DirectionalLight(0xffe8c0, 1.25);
+            key.position.set(3, 4, 5);
+            inventoryScene.add(key);
+            const fill = new THREE.DirectionalLight(0xbfd8ff, .55);
+            fill.position.set(-2, 1.5, 3);
+            inventoryScene.add(fill);
+        }
+        function clearInventoryPreview() {
+            inventoryPreviewRequestId++;
+            if (inventoryScene) {
+                const extras = [];
+                inventoryScene.traverse(obj => { if (obj !== inventoryScene && obj.parent === inventoryScene && obj.userData && obj.userData.previewModel) extras.push(obj); });
+                extras.forEach(obj => { inventoryScene.remove(obj); disposeObj(obj); });
+            }
+            if (inventoryModel && inventoryScene) { inventoryScene.remove(inventoryModel); disposeObj(inventoryModel); }
+            inventoryModel = null;
+            if (inventoryRenderer && inventoryScene && inventoryCamera) inventoryRenderer.render(inventoryScene, inventoryCamera);
+        }
+        function setInventoryPreview(item) {
+            setupInventoryPreview();
+            ui.inventoryPreviewName.textContent = item.name;
+            clearInventoryPreview();
+            const requestId = inventoryPreviewRequestId;
+            loader.load(item.url, g => {
+                if (requestId !== inventoryPreviewRequestId) { disposeObj(g.scene); return; }
+                const root = new THREE.Group();
+                root.userData.previewModel = true;
+                const spin = new THREE.Group();
+                const content = new THREE.Group();
+                root.add(spin);
+                spin.add(content);
+
+                const model = g.scene;
+                model.traverse(c => { if (c.isMesh) { c.castShadow = false; c.receiveShadow = false; } });
+                content.add(model);
+                normalize(content, (item.fit || 1.15) * 1.7);
+
+                const box = new THREE.Box3().setFromObject(content);
+                const size = box.getSize(new THREE.Vector3());
+                const sphere = new THREE.Sphere();
+                box.getBoundingSphere(sphere);
+                const radius = Math.max(sphere.radius, .75);
+                const tweak = PREVIEW_TWEAKS[item.id] || { y: 0, z: 1.0 };
+
+                // small per-item vertical nudge after centering
+                content.position.y += radius * (tweak.y ?? 0);
+
+                const halfFov = THREE.MathUtils.degToRad(inventoryCamera.fov * .5);
+                const fitRadius = Math.max(size.x, size.y, size.z) * 0.5;
+                const dist = (fitRadius / Math.sin(halfFov)) * 1.28 * (tweak.z || 1.0);
+                inventoryCamera.position.set(0, 0.04, Math.max(4.2, dist));
+                inventoryCamera.lookAt(0, 0, 0);
+
+                inventoryScene.add(root);
+                inventoryModel = spin;
+            }, undefined, () => {
+                if (requestId !== inventoryPreviewRequestId) return;
+                const root = new THREE.Group();
+                root.userData.previewModel = true;
+                const spin = new THREE.Group();
+                const content = new THREE.Group();
+                root.add(spin);
+                spin.add(content);
+                const fallbackModel = fallback();
+                content.add(fallbackModel);
+                fallbackModel.position.set(0, 0, 0);
+                inventoryScene.add(root);
+                inventoryCamera.position.set(0, 0.04, 5.2);
+                inventoryCamera.lookAt(0, 0, 0);
+                inventoryModel = spin;
+            });
+        }
+        function updateInventoryPreview(dt) {
+            if (!inventoryOpen || !inventoryRenderer || !inventoryScene || !inventoryCamera) return;
+            if (inventoryModel) inventoryModel.rotation.y += dt * .8;
+            inventoryRenderer.render(inventoryScene, inventoryCamera);
+        }
+        function start() { resetExpedition(); started = true; ui.menu.style.display = "none"; audio(); if (bgmAudio) bgmAudio.play().catch(() => { }); renderer.domElement.requestPointerLock(); message("宝箱や光る宝物に近づいて F で調べよう。宝物を全部集めなくてもRETURNから帰還できます。", 4); }
+        function audio() { if (audioCtx) return; audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = "sine"; o.frequency.value = 49; g.gain.value = .026; o.connect(g).connect(audioCtx.destination); o.start(); const n = audioCtx.createBufferSource(), b = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++)d[i] = (Math.random() * 2 - 1) * .5; n.buffer = b; n.loop = true; const f = audioCtx.createBiquadFilter(), ng = audioCtx.createGain(); f.type = "lowpass"; f.frequency.value = 520; ng.gain.value = .032; n.connect(f).connect(ng).connect(audioCtx.destination); n.start(); }
+        function tone(freq, dur = .16, type = "triangle", vol = .1) { if (!audioCtx || muted) return; const t = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .015); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + dur + .02); }
+        function step() { tone(72 + Math.random() * 18, .13, "triangle", .08) } function pickup() { [523, 659, 784].forEach((f, i) => setTimeout(() => tone(f, .22, "sine", .12), i * 60)) } function fail() { tone(92, .35, "sawtooth", .12) } function openSound() { tone(180, .18, "square", .08); setTimeout(() => tone(250, .16, "triangle", .06), 80) }
+        function chips() { ui.chips.innerHTML = FOUND.map(i => `<div class="chip ${collected.has(i.id) ? "done" : ""}">${collected.has(i.id) ? "✓ " : ""}${i.name}</div>`).join(""); }
+        
+        function updateExpeditionTimer(dt) {
+            if (!started || cleared || expeditionEnded) return;
+            expeditionTime -= dt;
+            updateExpeditionHUD();
+            if (expeditionTime <= 0) {
+                expeditionTime = 0;
+                updateExpeditionHUD();
+                message("時間切れ。脱出できなかった。", 3.0); endExpedition("time");
+            }
+        }
+
+        function updatePlayer(dt) {
+            const f = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)), r = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw)), m = new THREE.Vector3();
+
+            if (player.wantJump && player.grounded) {
+                player.yVel = 5.7;
+                player.grounded = false;
+                tone(260, .11, "sine", .045);
+            }
+            player.wantJump = false;
+
+            if (keys.has("KeyW")) m.sub(f);
+            if (keys.has("KeyS")) m.add(f);
+            if (keys.has("KeyD")) m.add(r);
+            if (keys.has("KeyA")) m.sub(r);
+
+            const moving = m.lengthSq() > 0;
+            player.sprinting = keys.has("ShiftLeft") && moving && player.stamina > 4 && player.grounded;
+
+            if (moving) {
+                m.normalize();
+                const sp = player.speed * (player.sprinting ? 1.55 : 1);
+                const next = player.pos.clone().addScaledVector(m, sp * dt);
+                constrain(next);
+                player.pos.x = next.x;
+                player.pos.z = next.z;
+                const newGround = computeGroundY(player.pos);
+                if (player.grounded) { player.groundY = newGround; player.pos.y = newGround; }
+                else player.groundY = newGround;
+                footTimer -= dt;
+                if (player.grounded && footTimer <= 0) { step(); footTimer = player.sprinting ? .26 : .42 }
+            } else footTimer = 0;
+
+            if (player.sprinting) player.stamina = Math.max(0, player.stamina - 32 * dt);
+            else player.stamina = Math.min(player.maxStamina, player.stamina + (player.grounded ? 22 : 12) * dt);
+
+            ui.staminaText.textContent = Math.round(player.stamina) + "%";
+            ui.staminaFill.style.width = player.stamina + "%";
+
+            player.yVel -= 14.5 * dt;
+            player.pos.y += player.yVel * dt;
+            if (player.pos.y <= player.groundY) {
+                player.pos.y = player.groundY;
+                player.yVel = 0;
+                player.grounded = true;
+            }
+
+            camera.position.copy(player.pos);
+            camera.rotation.order = "YXZ";
+            camera.rotation.y = player.yaw;
+            camera.rotation.x = player.pitch;
+        }
+        function constrain(n) {
+            n.x = Math.max(-WORLD.x, Math.min(WORLD.x, n.x));
+            n.z = Math.max(-WORLD.z, Math.min(WORLD.z, n.z));
+            for (const b of blockers) {
+                if (b.jumpable && player.pos.y > player.groundY + .45) continue;
+                if (b.r) {
+                    const dx = n.x - b.x, dz = n.z - b.z, dist = Math.hypot(dx, dz), min = b.r + player.radius;
+                    if (dist < min && dist > .0001) { n.x += dx / dist * (min - dist); n.z += dz / dist * (min - dist) }
+                } else {
+                    const hw = b.w / 2 + player.radius, hd = b.d / 2 + player.radius, dx = n.x - b.x, dz = n.z - b.z;
+                    if (Math.abs(dx) < hw && Math.abs(dz) < hd) {
+                        if (hw - Math.abs(dx) < hd - Math.abs(dz)) n.x = b.x + Math.sign(dx || 1) * hw;
+                        else n.z = b.z + Math.sign(dz || 1) * hd
+                    }
+                }
+            }
+        }
+        function computeGroundY(pos) {
+            let y = 1.75;
+            // 2F zones apply only when already transported up by ladder.
+            if (player.pos.y > 3.4) {
+                for (const f of floorZones) {
+                    if (Math.abs(pos.x - f.x) < f.w / 2 && Math.abs(pos.z - f.z) < f.d / 2) y = Math.max(y, f.y);
+                }
+            }
+            return y;
+        }
+        function updateInteract(dt) {
+            nearest = null;
+            nearestLadder = null;
+            let best = 99;
+
+            for (const b of boxes) {
+                if (!b.searched) {
+                    const dist = player.pos.distanceTo(b.pos);
+                    if (dist < best && dist < 2.4) { best = dist; nearest = b }
+                }
+            }
+
+            for (const p of pickups) {
+                if (!p.taken) {
+                    const dist = player.pos.distanceTo(p.pos);
+                    if (p.mesh) p.mesh.rotation.y += dt * .55;
+                    if (dist < best && dist < 2.5) { best = dist; nearest = p }
+                }
+            }
+
+            for (const l of ladders) {
+                const dx = player.pos.x - l.x, dz = player.pos.z - l.z;
+                if (Math.hypot(dx, dz) < 1.65) {
+                    nearestLadder = l;
+                    break;
+                }
+            }
+
+            if (nearest) {
+                ui.prompt.style.display = "block";
+                ui.prompt.textContent = nearest.kind === "box" ? "F：宝箱を開ける" : `F：${nearest.name} を回収`;
+            } else if (nearestLadder) {
+                ui.prompt.style.display = "block";
+                ui.prompt.textContent = player.pos.y > 3.4 ? "F：はしごで1階へ降りる" : "F：はしごで2階へ上がる";
+            } else if (!gateConfirm) ui.prompt.style.display = "none";
+
+            if (flicker > 0) { flicker -= dt; scene.fog.density = .04 + Math.sin(performance.now() * .045) * .014 } else scene.fog.density = .026;
+        }
+        function interact() {
+            if (!started || cleared) return;
+            if (gateConfirm) { finishGame(); return; }
+            if (nearestLadder) { useLadder(nearestLadder); return; }
+            if (!nearest) return;
+            if (nearest.kind === "box") searchBox(nearest); else takePickup(nearest);
+        }
+        function useLadder(l) {
+            const goingUp = player.pos.y < 3.4;
+            player.pos.x = l.x;
+            player.pos.z = l.z;
+            player.pos.y = goingUp ? l.topY : l.bottomY;
+            player.groundY = player.pos.y;
+            player.yVel = 0;
+            player.grounded = true;
+            tone(420, .12, "sine", .05);
+            message(goingUp ? "はしごで2階へ上がった。" : "はしごで1階へ降りた。", 1.8);
+        }
+        function searchBox(b) {
+            if (b.searched) return;
+            b.searched = true;
+            if (b.light) b.light.intensity = 0;
+
+            const roll = Math.random();
+            const hasTreasure = roll < (b.itemChance ?? .10);
+
+            if (b.mesh) openTreasureChest(b.mesh, hasTreasure);
+            openSound();
+
+            if (hasTreasure) {
+                const item = FOUND[Math.floor(Math.random() * FOUND.length)];
+                spawnItem(item, b.pos);
+                message(`宝箱の中から ${item.name} が見つかった！ Fで回収できる。`, 3.2);
+            } else {
+                flicker = 2.2; fail();
+                message("宝箱の中から冷たい風が吹いた。ハズレだ。", 2.8);
+            }
+        }
+        function dropPositionForChest(b) {
+            if (!b.mesh) return b.pos.clone().add(new THREE.Vector3(0, 0, 1.45));
+            const rot = b.mesh.rotation.y;
+            const forward = new THREE.Vector3(Math.sin(rot), 0, Math.cos(rot));
+            return b.pos.clone().addScaledVector(forward, 1.55);
+        }
+        function takePickup(p) { if (p.taken) return; p.taken = true;
+            const wasNew = !(discovered.has(p.id) || expeditionFound.has(p.id));
+            expeditionFound.add(p.id);
+            collected.add(p.id);
+            const record = { id: p.id, name: p.name, url: p.url, fit: p.fit || 1, isNew: wasNew };
+            inventory.push(record);
+            expeditionItems.push(record); if (p.mesh) p.mesh.visible = false; if (p.light) p.light.intensity = 0; pickup(); updateExpeditionHUD(); chips(); updateExpeditionHUD(); if (wasNew) message(`新発見：${p.name}！ 図鑑に登録された。`, 3.0); else message(`${p.name} を回収した。`, 2.2); buildCatalog(ui.catalogSearch?.value || ""); }
+        function updateExit() {
+            if (cleared) return;
+            const nearGate = player.pos.distanceTo(new THREE.Vector3(0, 1.7, -66)) < 3.5;
+            gateConfirm = nearGate;
+            if (nearGate && !nearest) {
+                ui.prompt.style.display = "block";
+                ui.prompt.textContent = "F：RETURNゲートから帰還する";
+            }
+        }
+        function finishGame() {
+            endExpedition("return");
+        }
+
+        function drawMiniMap() {
+            const c = ui.map, ctx = mapCtx, w = c.width, h = c.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = "rgba(3,7,16,.96)"; ctx.fillRect(0, 0, w, h);
+            const sx = w / (WORLD.x * 2), sz = h / (WORLD.z * 2);
+            const px = x => (x + WORLD.x) * sx, py = z => (z + WORLD.z) * sz;
+
+            // street network hints
+            ctx.strokeStyle = "rgba(143,220,255,.16)"; ctx.lineWidth = 1;
+            for (const z of [-64, -54, -32, -8, 17, 41, 64]) { ctx.beginPath(); ctx.moveTo(px(-40), py(z)); ctx.lineTo(px(40), py(z)); ctx.stroke(); }
+            ctx.beginPath(); ctx.moveTo(px(0), py(-72)); ctx.lineTo(px(0), py(72)); ctx.stroke();
+
+            // blockers / buildings
+            ctx.fillStyle = "rgba(255,255,255,.10)";
+            for (const b of blockers) {
+                if (b.w && b.d) {
+                    ctx.fillRect(px(b.x - b.w / 2), py(b.z - b.d / 2), b.w * sx, b.d * sz);
+                } else if (b.r) {
+                    ctx.beginPath(); ctx.arc(px(b.x), py(b.z), Math.max(1.5, b.r * sx), 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            // enterable two-floor buildings
+            ctx.fillStyle = "rgba(111,146,184,.75)";
+            for (const h of enterableHomes) {
+                ctx.fillRect(px(h.x - h.w / 2), py(h.z - h.d / 2), h.w * sx, h.d * sz);
+                ctx.fillStyle = "#9fb9d8";
+                ctx.font = "10px system-ui";
+                ctx.fillText("2F", px(h.x) - 6, py(h.z) + 3);
+                ctx.fillStyle = "rgba(111,146,184,.75)";
+            }
+
+            // boxes and pickups
+            if (showChestsOnMap) for (const b of boxes) {
+                if (!b.searched) { ctx.fillStyle = "#8a6a4a"; ctx.fillRect(px(b.pos.x) - 2, py(b.pos.z) - 2, 4, 4); }
+            }
+            for (const p of pickups) {
+                if (!p.taken) { ctx.fillStyle = "#ffd166"; ctx.beginPath(); ctx.arc(px(p.pos.x), py(p.pos.z), 3.2, 0, Math.PI * 2); ctx.fill(); }
+            }
+
+            // exit
+            ctx.fillStyle = "#7cffb2";
+            ctx.fillRect(px(-4), py(-70) - 2, 8, 4);
+
+            // player triangle
+            const x = px(player.pos.x), y = py(player.pos.z), ang = player.yaw;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(-ang);
+            ctx.fillStyle = "#7bdcff"; ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+            ctx.restore();
+
+            ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 2; ctx.strokeRect(1, 1, w - 2, h - 2);
+        }
+
+        function message(t, s = 2.5) { ui.msg.textContent = t; ui.msg.style.display = "block"; msgTimer = s } function updateMsg(dt) { if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) ui.msg.style.display = "none" } }
+        function animate() { const dt = Math.min(clock.getDelta(), .033); updateShootingStars(dt); updateCatalogPreview(dt); if (started && !cleared && !expeditionEnded) { updateExpeditionTimer(dt); updatePlayer(dt); updateInteract(dt); updateExit(); updateMsg(dt); drawMiniMap(); updateInventoryPreview(dt) } renderer.render(scene, camera); requestAnimationFrame(animate); }
+    </script>
+</body>
+</html>
